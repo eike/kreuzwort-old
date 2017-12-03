@@ -75,7 +75,7 @@ german =
     hideHTML: 'Gitter-HTML ausblenden'
     noHint: 'Kein Hinweis in diese Richtung.'
     print: 'Drucken'
-    printEmtpy: 'Leer drucken'
+    printEmpty: 'Leer drucken'
 
 class Kreuzwort
     constructor: (@container, @features = Kreuzwort.featuresFull, @strings = strings) ->
