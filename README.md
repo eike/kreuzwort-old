@@ -31,11 +31,23 @@ kreuzwort.coffee is a Coffeescript for displaying beautiful and interactive cros
 
 3. Create an instance of the Kreuzwort class:
 
-       kreuzwort = new Kreuzwort(container, features)
+       kreuzwort = new Kreuzwort(container, features, strings)
     
-   `features` is an object that allows you turn certain features on and off:
+   `features` is an object that allows you turn certain features on and off by setting the following to `true` or `false`:
    
-   TODO
+   Property | Description
+   ---------|------------
+   `check` | Whether it should be possible to check the solution. So far, it is only possible by checking the complete puzzle. Add the value return value of the `currentHash` method on a completed crossword as the attribute `data-solution-hash` to the table when using this feature.
+   `clear` | Whether to show a link to completely reset the puzzle.
+   `print` | Whether to show ‘Print’ and ‘Print empty’ links
+   `hintListing` | Whether to create the listing of all hints. Setting this to false gives a more compact view of the crossword; the hints are still accessible by selecting cells in the grid.
+   `writeNewCells` | Whether cells that are not marked as entry cells (by filling them with a space) can be written to. This is intended to be used when creating a crossword grid.
+   `setBars` | Whether bars can be set by pressing Enter. Intended for creation of crosswords.
+   `createGrid` | Whether a link to output the HTML of the (empty) grid should be displayed. Intended for creation.
+   
+   The crossword object has the presets `Kreuzwort.featuresFull`, `Kreuzwort.featuresCompact` and `Kreuzwort.featuresConstruction` as features objects.
+   
+   `strings` is an object with translation strings. Look at the `Kreuzwort.languages` object to see all the strings.
    
    You can have multiple instances of Kreuzwort on one page.
 
@@ -56,10 +68,6 @@ kreuzwort.coffee is a Coffeescript for displaying beautiful and interactive cros
 
 - If your grid is barred and you use CSS border collapse: If two neighboring cells have different borders, the thicker border wins, in case of a tie, the one from the top or left cell.
 
-### Creation controls
-
-- Kreuzwort.coffee comes with very basic to create the markup of your grid. TODO
-
 ## Contribution
 
-Please leave an issue if you run into any bugs. I would also be interested to hear from you if you use a screenreader and have ideas on how to create a usable interface. Lastly, you can contribute translations: TODO
+Please leave an issue if you run into any bugs. I would also be interested to hear from you if you use a screenreader and have ideas on how to create a usable interface. Lastly, you can contribute translations.
