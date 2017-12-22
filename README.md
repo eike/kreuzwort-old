@@ -25,7 +25,7 @@ kreuzwort.coffee is a Coffeescript for displaying beautiful and interactive cros
 
        <script type="javascript" src="kreuzwort.js"></script>
 
-2. Prepare your grid: kreuzwort.coffee expects some kind of container (say `arctile` or `div`) that contains a `table` representing the grid. In this table:
+2. Prepare your grid: kreuzwort.coffee expects some kind of container (say `article` or `div`) that contains a `table` representing the grid. In this table:
    - Non-empty cells represent input cells, completely empty cells are blocks.
    - Hints can be placed by setting the `data-hint-vertical` and/or `data-hint-horizontal` attributes of the starting cell. To create a bar without a hint leave the value of the attribute blank. These empty hints will not show up in the hint listing. The values of the hint attributes are used as innerHTML, so you can add HTML tags for special styling, but you also need to be careful with user-generated content.
 
