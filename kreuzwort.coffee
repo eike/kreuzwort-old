@@ -43,6 +43,17 @@ toClipboard = (string) =>
     document.execCommand('copy')
     document.body.removeChild textarea
 
+createSecretInput = (outline) ->
+    secretInput = document.createElement('input')
+    secretInput.style['position'] = 'absolute'
+    secretInput.style['margin'] = '0'
+    secretInput.style['padding'] = '0'
+    secretInput.style['border'] = 'none'
+    secretInput.style['outline'] = "1px solid #{outline}"
+    #secretInput.style['z-index'] = '-1'
+    secretInput.style['left'] = '-10000px'
+    return secretInput
+
 strings =
     checkSolution: 'checkSolution'
     solutionCorrect: 'solutionCorrect'
@@ -92,18 +103,18 @@ class Kreuzwort
     constructor: (@container, @features = Kreuzwort.featuresFull, @strings = strings) ->
         @grid = @container.querySelector('table')
 
-        @previousInput = @createSecretInput('purple')
+        @previousInput = createSecretInput('purple')
         @previousInput.onfocus = () =>
             @retrogressCursor()
             @secretInput.focus()
         @container.insertBefore(@previousInput, @grid)
         
-        @secretInput = @createSecretInput('red')
+        @secretInput = createSecretInput('red')
         @secretInput.onblur = =>
             @blur()
         @container.insertBefore(@secretInput, @grid)
         
-        @nextInput = @createSecretInput('navy')
+        @nextInput = createSecretInput('navy')
         @nextInput.onfocus = () =>
             @advanceCursor()
             @secretInput.focus()
@@ -235,17 +246,6 @@ class Kreuzwort
     
     cellWithNumber: (number) ->
         @startingCells()[number - 1]
-    
-    createSecretInput: (outline) ->
-        secretInput = document.createElement('input')
-        secretInput.style['position'] = 'absolute'
-        secretInput.style['margin'] = '0'
-        secretInput.style['padding'] = '0'
-        secretInput.style['border'] = 'none'
-        secretInput.style['outline'] = "1px solid #{outline}"
-        #secretInput.style['z-index'] = '-1'
-        secretInput.style['left'] = '-10000px'
-        return secretInput
     
     repositionSecretInputs: ->
         @nextInput.style['top'] = @secretInput.style['top'] = @previousInput.style['top'] = "#{@grid.offsetTop}px"
