@@ -56,6 +56,8 @@ kreuzwort.coffee is a Coffeescript for displaying beautiful and interactive cros
    - a div `controls` containing the buttons for checking, clearing, printing etc.
    - headings h2 and ordered lists of hints for Across and Down
 
+See also in the examples folder.
+
 ### Tips
 
 - Kreuzwort.coffee does not add numbers to the cells, but you can do that with CSS. Kreuzwort.coffee considers a cell to be numbered when it has a non-empty data-hint-vertical or data-hint-horizontal attribute. The following CSS selector selects these cells:

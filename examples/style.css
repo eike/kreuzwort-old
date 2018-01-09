@@ -1,0 +1,38 @@
+table {
+    border-collapse: collapse;
+    counter-reset: hint;
+}
+
+td {
+    width: 30px;
+    height: 30px;
+    position: relative;
+    text-align: center;
+    vertical-align: middle;
+}
+
+td:not(:empty) {
+    border: 1px solid black;
+}
+
+td[data-hint-horizontal] {
+    border-left-width: 3px;
+}
+
+td[data-hint-vertical] {
+    border-top-width: 3px;
+}
+
+td[data-hint-horizontal]:not([data-hint-horizontal=""])::before,
+td[data-hint-vertical]:not([data-hint-vertical=""])::before {
+    counter-increment: hint;
+    content: counter(hint);
+    position: absolute;
+    top: 1px;
+    left: 1px;
+    font-size: 70%;
+}
+
+td.current-word {
+    background-color: yellow;
+}
