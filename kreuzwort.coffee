@@ -180,7 +180,7 @@ class Kreuzwort
                 controlsDiv.append ' • '
             createButton = document.createElement 'a'
             createButton.textContent = @strings.copyHTML
-            createButton.onclick = => toClipboard(@createGrid())
+            createButton.onclick = => toClipboard(@gridHTML())
             controlsDiv.append createButton
         
         if controlsDiv.hasChildNodes()
