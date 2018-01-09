@@ -54,6 +54,13 @@ createSecretInput = (outline) ->
     secretInput.style['left'] = '-10000px'
     return secretInput
 
+standardLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split ""
+standardKeyProcess = (key) ->
+    if (standardLetters.indexOf key) >= 0
+        [key.toUpperCase()]
+    else
+        null
+
 strings =
     checkSolution: 'checkSolution'
     solutionCorrect: 'solutionCorrect'
@@ -222,7 +229,7 @@ class Kreuzwort
                                 @grid.scrollIntoView()
                                 @focus cell, direction
                             hintLists[direction].append li
-            
+        
         @cursor = null
         @direction = horizontal
         @currentWord = []
@@ -231,10 +238,7 @@ class Kreuzwort
         
         @number = 0
         @numberTimeStamp = 0
-        @permissibleLetters =
-            "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split ''
-        
-        @constructionMode = @grid.hasAttribute('data-construction-mode')
+        @keyProcess = standardKeyProcess
         
         @load()
     
@@ -382,11 +386,12 @@ class Kreuzwort
         preventDefault = true
         preserveNumber = false
         
-        if @permissibleLetters.indexOf(e.key) >= 0
-            cell = @cellAfter()
-            if (@isEntryCell cell) or @features.writeNewCells
-                cell.textContent = e.key.toUpperCase()
-                @advanceCursor()
+        if (entries = @keyProcess e.key)?
+            for entry in entries
+                cell = @cellAfter()
+                if (@isEntryCell cell) or @features.writeNewCells
+                    cell.textContent = entry
+                    @advanceCursor()
         else if "0" <= e.key <= "9"
             preserveNumber = true
             @number = 0 if e.timeStamp - @numberTimeStamp > 1000
