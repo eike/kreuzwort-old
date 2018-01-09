@@ -35,6 +35,14 @@ hash = (string) =>
         h = h & h # Convert to 32bit integer
     return h.toString()
 
+toClipboard = (string) =>
+    textarea = document.createElement 'textarea'
+    textarea.value = string
+    document.body.appendChild textarea
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild textarea
+
 strings =
     checkSolution: 'checkSolution'
     solutionCorrect: 'solutionCorrect'
@@ -44,6 +52,7 @@ strings =
     horizontal: 'horizontal'
     vertical: 'vertical'
     showHTML: 'showHTML'
+    copyHTML: 'copyHTML'
     hideHTML: 'hideHTML'
     noHint: 'noHint'
     print: 'print'
@@ -58,6 +67,7 @@ english =
     horizontal: 'Across'
     vertical: 'Down'
     showHTML: 'Show Grid HTML'
+    copyHTML: 'Copy HTML to Clipboard'
     hideHTML: 'Hide Grid HTML'
     noHint: 'There is no hint in this direction.'
     print: 'Print'
@@ -72,6 +82,7 @@ german =
     horizontal: 'Waagerecht'
     vertical: 'Senkrecht'
     showHTML: 'Gitter-HTML anzeigen'
+    copyHTML: 'HTML in die Zwischenablage'
     hideHTML: 'Gitter-HTML ausblenden'
     noHint: 'Kein Hinweis in diese Richtung.'
     print: 'Drucken'
@@ -168,25 +179,10 @@ class Kreuzwort
             else
                 controlsDiv.append ' • '
             createButton = document.createElement 'a'
-            createButton.textContent = @strings.showHTML
-            createGridOutput = document.createElement 'textarea'
-            showFunction = =>
-                createGridOutput.style['position'] = 'absolute'
-                createGridOutput.style['width'] = "#{@grid.offsetWidth}px"
-                createGridOutput.style['height'] = "#{@grid.offsetHeight}px"
-                createGridOutput.style['top'] = "#{@grid.offsetTop}px"
-                createGridOutput.style['left'] = "#{@grid.offsetLeft}px"
-                createGridOutput.textContent = @createGrid()
-                @container.append createGridOutput
-                createButton.textContent = @strings.hideHTML
-                createButton.onclick = hideFunction
-            hideFunction = =>
-                createGridOutput.remove()
-                createButton.textContent = @strings.showHTML
-                createButton.onclick = showFunction
-            createButton.onclick = showFunction
+            createButton.textContent = @strings.copyHTML
+            createButton.onclick = => toClipboard(@createGrid())
             controlsDiv.append createButton
-            
+        
         if controlsDiv.hasChildNodes()
             @container.insertBefore controlsDiv, elementAfterGrid
         
@@ -447,12 +443,13 @@ class Kreuzwort
         e.preventDefault() if preventDefault
         @number = 0 unless preserveNumber
         
-    clear: ->
+    clear: (clearStorage = true) ->
         for cell in @grid.querySelectorAll('td:not(:empty)')
             cell.innerHTML = "&nbsp;"
-        try
-            localStorage.removeItem("coffeeword-#{@container.id}-v1")
-        catch
+        if clearStorage
+            try
+                localStorage.removeItem("coffeeword-#{@container.id}-v1")
+            catch
         return
     
     populateHints: ->
@@ -497,15 +494,14 @@ class Kreuzwort
     currentHash: ->
         hash @saveV1()
     
-    createGrid: (empty = true) ->
+    gridHTML: () ->
         @blur()
         @grid.setAttribute('data-solution-hash-v1', @currentHash())
-        if empty
-            temp = @save()
-            @clear()
+        @populateHints()
+        temp = @saveV1()
+        @clear false
         html = @grid.outerHTML
-        if empty
-            @loadV1(temp)
+        @loadV1(temp)
         return html
 
     @featuresFull:
