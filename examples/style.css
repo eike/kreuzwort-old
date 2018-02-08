@@ -1,6 +1,32 @@
+h1 {
+    font-size: 24px;
+    font-weight: normal;
+    line-height: 20px;
+    margin: 0;
+}
+
+h2 {
+    font-size: 16px;
+    line-height: 20px;
+    text-transform: uppercase;
+    margin: 20px 0 0;
+}
+
+ol {
+    margin: 0;
+    padding: 0;
+}
+
+li {
+    font-size: 16px;
+    line-height: 20px;
+    padding-left: 40px;
+}
+
 table {
     border-collapse: collapse;
-    counter-reset: hint;
+    counter-reset: clue;
+    font-family: sans-serif;
 }
 
 td {
@@ -8,31 +34,139 @@ td {
     height: 30px;
     position: relative;
     text-align: center;
-    vertical-align: middle;
+    vertical-align: bottom;
+    box-sizing: border-box;
 }
 
-td:not(:empty) {
+.barred td:not(:empty) {
     border: 1px solid black;
 }
 
-td[data-hint-horizontal] {
+.barred td[data-clue-horizontal] {
     border-left-width: 3px;
 }
 
-td[data-hint-vertical] {
+.barred td[data-clue-vertical] {
     border-top-width: 3px;
 }
 
-td[data-hint-horizontal]:not([data-hint-horizontal=""])::before,
-td[data-hint-vertical]:not([data-hint-vertical=""])::before {
-    counter-increment: hint;
-    content: counter(hint);
+.blocked td {
+    border: 1px solid black;
+}
+
+.blocked td:empty {
+    background-color: black;
+}
+
+/*td[data-clue-horizontal]:not([data-clue-horizontal=""])::before,
+td[data-clue-vertical]:not([data-clue-vertical=""])::before {
+    counter-increment: clue;
+    content: counter(clue);
     position: absolute;
     top: 1px;
-    left: 1px;
-    font-size: 70%;
+    left: 2px;
+    font: 0.7rem sans-serif;
+    color: gray;
+}*/
+
+td[data-cell-number]::before {
+    content: attr(data-cell-number);
+    position: absolute;
+    top: 1px;
+    left: 2px;
+    font: 0.7rem sans-serif;
+    color: gray;
 }
 
 td.current-word {
-    background-color: yellow;
+    background-color: lightblue;
 }
+
+td.cursor-top {
+    border-top-color: blue !important;
+}
+
+td.cursor-bottom {
+    border-bottom-color: red !important;
+}
+
+td.cursor-left {
+    border-left-color: red !important;
+}
+
+td.cursor-right {
+    border-right-color: red !important;
+}
+
+.current-clue {
+    background-color: lightblue;
+}
+
+.current-word-position {
+    font-weight: bold;
+}
+
+li {
+    cursor: pointer;
+    list-style: none;
+    position: relative;
+}
+
+li::before {
+    content: attr(value) '.';
+    position: absolute;
+    left: 0;
+    display: block;
+    width: 32px;
+    text-align: right;
+}
+
+.enumeration {
+    font-family: sans-serif;
+}
+
+td[rowspan="2"] {
+    font-size: 2em;
+}
+
+/*
+body {
+    column-width: 215px;
+    column-gap: 21px;
+    column-rule: 1px solid black;
+    width: 687px;
+    margin: 0 auto;
+position: relative;
+    padding: 500px 0 0;
+}
+
+h1 {
+    margin-top: -480px;
+}
+
+h2:first-of-type {
+}
+
+table {
+    position: absolute;
+    right: 0;
+    top: 21px;
+    width: 451px;
+}
+
+.controls {
+    display: none;
+}
+
+p.current-clue {
+    display: none;
+}
+
+.enumeration {
+    display: none;
+}
+
+li {
+    break-inside: avoid;
+}
+*/

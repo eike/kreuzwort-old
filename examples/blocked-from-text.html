@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <title>Blocked Crossword from Text</title>
+        <script src="../dist/kreuzwort.js"></script>
+        <script>
+            function generate(event) {
+                event.preventDefault();
+                
+                var container = event.srcElement.parentElement;
+                
+                var table = fromGrid(event.srcElement.elements.grid.value);
+                table.className = "blocked";
+                
+                event.srcElement.remove();
+                container.append(table);
+                container.classList.add('compact');
+                kreuzwort = kreuzwortAutoSetup(container);
+                kreuzwort.clueWordsAtLeastLong(3);
+            }
+            
+            window.onload = function() {
+                document.querySelector('form').onsubmit = generate;
+            }
+        </script>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body>
+<article id="minigma2" class="crossword">
+        <h1>Blocked Crossword from Text</h1>
+        
+        <p>You can enter a crossword in the following grid (each line is a row of the crossword, <tt>X</tt> represents an empty cell, <tt>.</tt> a block) and press <q>Generate</q> to generate a crossword grid.</p>
+        
+    <form><textarea name="grid" rows=30 cols=40 style="font-family: monospace">XXXXXX..XXX..XXXX...XXXXX
+XXXXXXX.XXXX.XXXX.XXXXXXX
+XXXXXXX.XXXX.XXXX.XXXXXXX
+XXX...XXX.XXXX..XXXXX....
+.XXX.XXX...XXXX..XXXX.XXX
+.XXXXXXXXXXXXXXXXX..XXXXX
+...XXX..XXX...XXXX.XXXXXX
+.XXXX.XXXXXX.XXXX.XXXXXXX
+XXXX.XXXX.XXXXXX..XXX.XXX
+XXX..XXX...XXXX.XXXXX....
+XXXX.XXXX.XXX...XXX.XXXXX
+...XXX..XXXXXX.XXXX.XXXXX
+XXXXXXX.XXXXXXXXX.XXXXXXX
+XXXXX.XXXX.XXXXXX..XXX...
+XXXXX.XXX...XXX.XXXX.XXXX
+....XXXXX.XXXX...XXX..XXX
+XXX.XXX..XXXXXX.XXXX.XXXX
+XXXXXXX.XXXX.XXXXXX.XXXX.
+XXXXXX.XXXX...XXX..XXX...
+XXXXX..XXXXXXXXXXXXXXXXX.
+XXX.XXXX..XXXX...XXX.XXX.
+....XXXXX..XXXX.XXX...XXX
+XXXXXXX.XXXX.XXXX.XXXXXXX
+XXXXXXX.XXXX.XXXX.XXXXXXX
+XXXXX...XXXX..XXX..XXXXXX
+</textarea>
+    <button type=submit>Generate</button></form>
+    
+</article>
+    </body>
+</html>

@@ -6,106 +6,69 @@
         <title>German Barred Crossword</title>
         <script src="../dist/kreuzwort.js"></script>
         <script>
-            window.onload = function() {
-                var container = document.querySelector('.crossword');
-                window.crossword = new Kreuzwort(container, Kreuzwort.featuresConstruction, Kreuzwort.languages.german);
-                standardKeyProcess = window.crossword.keyProcess;
-                window.crossword.keyProcess = function(key) {
-                    if (key === "ä" || key === "Ä") return ['A', 'E'];
-                    if (key === "ö" || key === "Ö") return ['O', 'E'];
-                    if (key === "ü" || key === "Ü") return ['U', 'E'];
-                    if (key === "ß") return ['S', 'S'];
-                    return standardKeyProcess(key);
-                }
-            }
+            window.addEventListener('load', function() {
+                window.kreuzwort = Kreuzwort.instances[0];
+                
+                kreuzwort.addCallback('input', function(e) {
+                    if (e.key === "ä" || e.key === "Ä") return ['A', 'E'];
+                    if (e.key === "ö" || e.key === "Ö") return ['O', 'E'];
+                    if (e.key === "ü" || e.key === "Ü") return ['U', 'E'];
+                    if (e.key === "ß") return ['S', 'S'];
+                    return null
+                });
+                
+                kreuzwort.features.setBars = true;
+                kreuzwort.features.writeNewCells = true;
+            });
         </script>
         <link rel="stylesheet" href="style.css" />
     </head>
     <body>
-<article id="minigma2" class="crossword">
+<article id="minigma2" class="kreuzwort construction">
         <h1>German Barred Crossword</h1>
         
         <p lang="en">This is a German crossword (following the German style of cryptic clues). As a special feature, the letters Ä, Ö, Ü, and ß are automatically replaced by their crossword versions AE, OE, UE, and SS.</p>
         
-    <table data-solution-hash-v1="-1568025294">
+    <table data-solution-hash-v1="-1568025294" class="barred">
     <tbody>
         <tr>
             <td></td>
             <td></td>
-            <td data-hint-vertical="Siemens unterm Bruchstrich">&nbsp;</td>
+            <td data-clue-vertical="Siemens unterm Bruchstrich"
+                data-explanation-vertical="Einheiten für elektrischen Widerstand (OHM) und Leitfähigkeit (Siemens)">&nbsp;</td>
             <td></td>
             <td></td>
-            <td data-hint-vertical="Manche hoffen, sie im Heer zu finden">&nbsp;</td>
+            <td data-clue-vertical="Manche hoffen, sie im Heer zu finden"
+                data-explanation-vertical="EHRE als Anagramm von Heer">&nbsp;</td>
             <td></td>
-            <td data-hint-vertical="Feiertags aus dem Backofen gezogen">&nbsp;</td>
+            <td data-clue-vertical="Feiertags aus dem Backofen gezogen">&nbsp;</td>
             <td></td>
             <td></td>
         </tr>
         <tr>
             <td></td>
-            <td data-hint-horizontal="In welchem musste man noch die Hs setzen?" data-hint-vertical="Antwort&shy;kürzel, Eigenwert, ein aufgelöstes Es – zusammen: Gebiete, auch Zustandsstellen">&nbsp;</td>
+            <td data-clue-horizontal="In welchem musste man noch die Hs setzen?"
+                data-explanation-horizontal="Die Schwierigkeit, den Buchstaben H im Wort RHYTHMUS an den richtigen Stellen (= im richtigen Rhythmus) zu schreiben"
+                data-clue-vertical="Antwort&shy;kürzel, Eigenwert, ein aufgelöstes Es – zusammen: Gebiete, auch Zustandsstellen"
+                data-explanation-vertical="Re (bei E-Mails), Vier (Zahl des Hinweises), E (Auflösung der Note Es in der Musik) – zusammen RE-VIER-E als Gebiete aber auch zuständige Dienststelle z.B. bei der Polizei">&nbsp;</td>
             <td>&nbsp;</td>
-            <td data-hint-vertical="Lateinisch-griechischer Teilbuchstabe">&nbsp;</td>
-            <td data-hint-vertical="Gehen gelassen: Mit aussen außen Auto verlassen">&nbsp;</td>
+            <td data-clue-vertical="Lateinisch-griechischer Teilbuchstabe"
+                data-explanation-vertical="YPSILON ist der einzige Buchstabe, den die Alphabete dem Namen nach gemein haben">&nbsp;</td>
+            <td data-clue-vertical="Gehen gelassen: Mit aussen außen Auto verlassen"
+                data-explanation-vertical="TEIG in auss-teig-en">&nbsp;</td>
             <td>&nbsp;</td>
-            <td data-hint-vertical="Seen im Mondlicht">&nbsp;</td>
+            <td data-clue-vertical="Seen im Mondlicht">&nbsp;</td>
             <td>&nbsp;</td>
-            <td data-hint-vertical="Literarische Folge auf Schulden">&nbsp;</td>
+            <td data-clue-vertical="Literarische Folge auf Schulden"
+                data-explanation-vertical="SUEHNEN in Anspielung auf Schuld und Sühne">&nbsp;</td>
             <td></td>
         </tr>
         <tr>
-            <td data-hint-horizontal="Ihre Einheiten folgen &lt;span style=&quot;font-feature-settings: 'lnum'&quot;&gt;&lt;i&gt;F&lt;/i&gt; = 1,8&thinsp;&lt;i&gt;C&lt;/i&gt; + 32&lt;/span&gt;">&nbsp;</td>
+            <td data-clue-horizontal="Ihre Einheiten folgen &lt;span style=&quot;font-feature-settings: 'lnum'&quot;&gt;&lt;i&gt;F&lt;/i&gt; = 1,8&thinsp;&lt;i&gt;C&lt;/i&gt; + 32&lt;/span&gt;"
+                data-explanation-horizontal="Umrechnungsformel für TEMPERATUR in Grad Celsius nach Grad Fahrenheit">&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-        </tr>
-        <tr>
-            <td></td>
-            <td data-hint-horizontal="Endlich erkennbar: Werden getragen, auf dass eines die Visage kaschiere">&nbsp;</td>
-            <td data-hint-vertical="Seit wir wieder 12 waagerecht sind, ist dies etwas mehr: ein Land">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-horizontal>&nbsp;</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td data-hint-horizontal="… sind sich -e Familien selten">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-vertical="Erst fällt einem … nichts ein, bis man merkt: Es passt …!" data-hint-horizontal="minus Mare senkrecht">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-vertical="Geprägt ohne Wertgewinn">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-        </tr>
-        <tr>
-            <td></td>
-            <td data-hint-horizontal="Um ein bis zwei erstes-en zurückgezogen, um zweites zu spannen">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-vertical="Codierter Männerfreund">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-vertical="Das unsichtbare Gold">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td></td>
-        </tr>
-        <tr>
-            <td data-hint-horizontal="Endlich verwechselt wird er flugs größer und dafür weniger bunt">&nbsp;</td>
-            <td>&nbsp;</td>
-            <td>&nbsp;</td>
-            <td data-hint-horizontal="Orangen passen hier zwar nicht, werden aber in und zu solchen verdaut">&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
@@ -115,14 +78,74 @@
         </tr>
         <tr>
             <td></td>
-            <td data-hint-horizontal="Durch&shy;aus Teil der Vornamennormen">&nbsp;</td>
+            <td data-clue-horizontal="Endlich erkennbar: Werden getragen, auf dass eines die Visage kaschiere"
+                data-explanation-horizontal="VISIERE an den Rändern von Vis-age kasch-iere">&nbsp;</td>
+            <td data-clue-vertical="Seit wir wieder 12 waagerecht sind, ist dies etwas mehr: ein Land"
+                data-explanation-horizontal="INLAND in e-in Land">&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
-            <td data-hint-horizontal="Zweigverwandter">&nbsp;</td>
             <td>&nbsp;</td>
             <td>&nbsp;</td>
-            <td data-hint-horizontal>&nbsp;</td>
+            <td data-clue-horizontal>&nbsp;</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td data-clue-horizontal="… sind sich -e Familien selten">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-vertical="Erst fällt einem … nichts ein, bis man merkt: Es passt …!"
+                data-explanation-vertical="So gar und SOGAR"
+                data-clue-horizontal="minus Mare senkrecht"
+                data-explanation-horizontal="Hinweiszahl von Mare ist 7; eigene Hinweiszahl 13 - 7 = SECHS">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-vertical="Geprägt ohne Wertgewinn"
+                data-explanation-vertical="CENTS; der Materialwert von Ein-Cent-Münzen liegt bei etwa einem Cent">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td data-clue-horizontal="Um ein bis zwei erstes-en zurückgezogen, um zweites zu spannen"
+                data-explanation-horizontal="ELLBOGEN, die beim Bogen-Spannen um ein bis zwei Ell-en zurückgezogen werden">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-vertical="Codierter Männerfreund"
+                data-explanation-vertical="BRO-Code aus How I Met Your Mother">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-vertical="Das unsichtbare Gold"
+                data-explanation-vertical="GAS als Anspielung auf das schwarze Gold Öl">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td data-clue-horizontal="Endlich verwechselt wird er flugs größer und dafür weniger bunt"
+                data-explanation-horizontal="ARA, tauschen der letzten beiden Buchstaben ergibt Aar = Adler">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-horizontal="Orangen passen hier zwar nicht, werden aber in und zu solchen verdaut"
+                data-explanation-horizontal="ORGANEN als Anagramm von Orangen">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+        </tr>
+        <tr>
+            <td></td>
+            <td data-clue-horizontal="Durch&shy;aus Teil der Vornamennormen"
+                data-explanation-horizontal="ENNO in Vornam-enno-rmen">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-horizontal="Zweigverwandter">&nbsp;</td>
+            <td>&nbsp;</td>
+            <td>&nbsp;</td>
+            <td data-clue-horizontal>&nbsp;</td>
             <td></td>
         </tr>
         <tr>
@@ -139,7 +162,6 @@
         </tr>
     </tbody>
 </table>
-    
 </article>
     </body>
 </html>

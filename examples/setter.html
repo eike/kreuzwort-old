@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0" />
+        <title>Crossword Setter</title>
+        <script src="../dist/kreuzwort.js"></script>
+        <script>
+            function createGrid() {
+                event.preventDefault();
+                
+                var container = event.target.parentElement;
+                var width = parseInt(event.target.elements.width.value);
+                var height = parseInt(event.target.elements.height.value);
+                event.target.remove();
+
+                var table = document.createElement('table');
+                table.classList.add('blocked');
+                for (var row = 0; row < height; row++) {
+                    var tr = document.createElement('tr');
+                    for (var col = 0; col < width; col++) {
+                        var td = document.createElement('td');
+                        td.innerHTML = '&nbsp;';
+                        tr.appendChild(td);
+                    }
+                    table.appendChild(tr);
+                }
+        
+                container.appendChild(table);
+        
+                window.kreuzwort = new Kreuzwort(table, 'unnamed', Kreuzwort.featuresConstruction);
+            }
+            
+            window.addEventListener('load', function() {
+                document.querySelector('form').addEventListener('submit', createGrid);
+            });
+        </script>
+        <link rel="stylesheet" href="style.css" />
+    </head>
+    <body class=crossword>
+        <h1>Crossword Setter</h1>
+        <form>
+            <label>Breite: <input name="width" type="number" value=15></label>
+            <label>Höhe: <input name="height" type="number" value=15></label>
+            <button>Gitter erstellen</button>
+        </form>
+    </body>
+</html>
