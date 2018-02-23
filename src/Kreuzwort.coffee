@@ -15,7 +15,7 @@
 # limitations under the License.
 
 class Word
-    constructor: (@kreuzwort, @cells, @direction) ->
+    constructor: (@cells, @direction) ->
         @callbacks =
             changed: [ ]
             completed: [ ]
@@ -128,10 +128,10 @@ class Kreuzwort
                     @repositionSecretInputs()
                     @focus event.target
         
-        # Instead of storing seperate arrays for vertical and horizontal words, maybe store just one array 
-        # and use filtering when a specific direction is required?
-        #for direction in [Kreuzwort.horizontal, Kreuzwort.vertical]
-        @words = (@wordsInDirection Kreuzwort.horizontal).concat @wordsInDirection Kreuzwort.vertical
+        @words = cellMatrixToWordList(@cellMatrix, Kreuzwort.horizontal, (cell) => 
+                cell.hasAttribute("data-clue-horizontal")
+            ).concat cellMatrixToWordList(@cellMatrix, Kreuzwort.vertical, (cell) => 
+                cell.hasAttribute("data-clue-vertical"))
         @numberWords()
         
         @_wordsAtCell = new Map()
@@ -219,41 +219,6 @@ class Kreuzwort
         @cellAfter(direction.retrogress(cursor))
     
     isEntryCell: (cell) -> cell? and cell.textContent != ""
-        
-    isInBounds: (cursor) ->
-        cursor.row < @cellMatrix.length and cursor.col < @cellMatrix[0].length
-    
-    wordsInDirection: (direction) ->
-        words = []
-        currentCells = []
-        pushWord = =>
-            if currentCells.length > 0
-                words.push (new Word this, currentCells, direction)
-                currentCells = []
-        
-        lineStart = { row: 0, col: 0 }
-        while @isInBounds lineStart
-            currentCursor = lineStart
-            while @isInBounds currentCursor
-                currentCell = @cellMatrix[currentCursor.row][currentCursor.col]
-                if not (@isEntryCell currentCell) or currentCell.hasAttribute("data-clue-#{direction}")
-                    pushWord()
-                if (@isEntryCell currentCell) and (currentCells[currentCells.length - 1] != currentCell)
-                    currentCells.push currentCell
-                currentCursor = direction.advance currentCursor
-            pushWord()
-            lineStart = direction.other.advance lineStart
-        
-        words.sort compareWordsDomOrder
-            
-        return words
-    
-    isWordBorder: (cursor, direction) ->
-        beforeCell = @cellBefore(cursor, direction)
-        afterCell = @cellAfter(cursor, direction)
-        
-        afterCell?.hasAttribute("data-clue-#{direction}") or
-            not @isEntryCell(afterCell) or not @isEntryCell(beforeCell)
     
     focus: (cell) ->
         words = @wordsAtCell cell
@@ -291,8 +256,8 @@ class Kreuzwort
         direction = @currentWord.direction
         index = @words.indexOf(@currentWord)
         @words.splice(index, 1)
-        preWord = new Word this, @currentWord.cells.slice(0, @positionInWord), direction
-        postWord = new Word this, @currentWord.cells.slice(@positionInWord), direction
+        preWord = new Word @currentWord.cells.slice(0, @positionInWord), direction
+        postWord = new Word @currentWord.cells.slice(@positionInWord), direction
         if preWord.length > 0
             @words.push preWord
             nextWord = preWord
@@ -347,7 +312,7 @@ class Kreuzwort
                     if e.shiftKey
                         @selectNextWord(-1)
                     else
-                        @selectNextWord()
+                        @selectNextWord(1, true)
                 when 'Backspace'
                     cell = @currentWord.cells[@positionInWord - 1]
                     if @isEntryCell cell
@@ -682,5 +647,36 @@ window.tableCellMatrix = (table) ->
                     m[row + i] = [] unless m[row + i]?
                     m[row + i][col + j] = cell
     return m
+
+constFalse = -> false
+standardBlockTest = (cell) -> cell.textContent == ''
+
+cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) ->
+    words = []
+    currentCells = []
+    isInBounds = (cursor) =>
+        cursor.row < matrix.length and cursor.col < matrix[0].length
+    pushWord = =>
+        if currentCells.length > 0
+            words.push (new Word currentCells, direction)
+            currentCells = []
+    
+    lineStart = { row: 0, col: 0 }
+    while isInBounds lineStart
+        currentCursor = lineStart
+        while isInBounds currentCursor
+            currentCell = matrix[currentCursor.row][currentCursor.col]
+            if isBlock(currentCell) or hasBarBefore(currentCell)
+                pushWord()
+            if not isBlock(currentCell) and (currentCells[currentCells.length - 1] != currentCell)
+                currentCells.push currentCell
+            currentCursor = direction.advance currentCursor
+        pushWord()
+        lineStart = direction.other.advance lineStart
+    
+    words.sort compareWordsDomOrder
+        
+    return words
+
 
 window.Kreuzwort = Kreuzwort

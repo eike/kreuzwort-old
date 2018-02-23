@@ -15,11 +15,10 @@
   // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   // See the License for the specific language governing permissions and
   // limitations under the License.
-  var Kreuzwort, Word, compareWordsDomOrder, createSecretInput, hash, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
+  var Kreuzwort, Word, cellMatrixToWordList, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
 
   Word = class Word {
-    constructor(kreuzwort, cells1, direction1) {
-      this.kreuzwort = kreuzwort;
+    constructor(cells1, direction1) {
       this.cells = cells1;
       this.direction = direction1;
       this.callbacks = {
@@ -223,11 +222,11 @@
             }
           });
         }
-        
-        // Instead of storing seperate arrays for vertical and horizontal words, maybe store just one array 
-        // and use filtering when a specific direction is required?
-        //for direction in [Kreuzwort.horizontal, Kreuzwort.vertical]
-        this.words = (this.wordsInDirection(Kreuzwort.horizontal)).concat(this.wordsInDirection(Kreuzwort.vertical));
+        this.words = cellMatrixToWordList(this.cellMatrix, Kreuzwort.horizontal, (cell) => {
+          return cell.hasAttribute("data-clue-horizontal");
+        }).concat(cellMatrixToWordList(this.cellMatrix, Kreuzwort.vertical, (cell) => {
+          return cell.hasAttribute("data-clue-vertical");
+        }));
         this.numberWords();
         this._wordsAtCell = new Map();
         ref1 = this.words;
@@ -376,50 +375,6 @@
         return (cell != null) && cell.textContent !== "";
       }
 
-      isInBounds(cursor) {
-        return cursor.row < this.cellMatrix.length && cursor.col < this.cellMatrix[0].length;
-      }
-
-      wordsInDirection(direction) {
-        var currentCell, currentCells, currentCursor, lineStart, pushWord, words;
-        words = [];
-        currentCells = [];
-        pushWord = () => {
-          if (currentCells.length > 0) {
-            words.push(new Word(this, currentCells, direction));
-            return currentCells = [];
-          }
-        };
-        lineStart = {
-          row: 0,
-          col: 0
-        };
-        while (this.isInBounds(lineStart)) {
-          currentCursor = lineStart;
-          while (this.isInBounds(currentCursor)) {
-            currentCell = this.cellMatrix[currentCursor.row][currentCursor.col];
-            if (!(this.isEntryCell(currentCell)) || currentCell.hasAttribute(`data-clue-${direction}`)) {
-              pushWord();
-            }
-            if ((this.isEntryCell(currentCell)) && (currentCells[currentCells.length - 1] !== currentCell)) {
-              currentCells.push(currentCell);
-            }
-            currentCursor = direction.advance(currentCursor);
-          }
-          pushWord();
-          lineStart = direction.other.advance(lineStart);
-        }
-        words.sort(compareWordsDomOrder);
-        return words;
-      }
-
-      isWordBorder(cursor, direction) {
-        var afterCell, beforeCell;
-        beforeCell = this.cellBefore(cursor, direction);
-        afterCell = this.cellAfter(cursor, direction);
-        return (afterCell != null ? afterCell.hasAttribute(`data-clue-${direction}`) : void 0) || !this.isEntryCell(afterCell) || !this.isEntryCell(beforeCell);
-      }
-
       focus(cell) {
         var newWord, words, wordsStartingHere, wordsWithClues;
         words = this.wordsAtCell(cell);
@@ -475,8 +430,8 @@
         direction = this.currentWord.direction;
         index = this.words.indexOf(this.currentWord);
         this.words.splice(index, 1);
-        preWord = new Word(this, this.currentWord.cells.slice(0, this.positionInWord), direction);
-        postWord = new Word(this, this.currentWord.cells.slice(this.positionInWord), direction);
+        preWord = new Word(this.currentWord.cells.slice(0, this.positionInWord), direction);
+        postWord = new Word(this.currentWord.cells.slice(this.positionInWord), direction);
         if (preWord.length > 0) {
           this.words.push(preWord);
           nextWord = preWord;
@@ -550,7 +505,7 @@
                 if (e.shiftKey) {
                   this.selectNextWord(-1);
                 } else {
-                  this.selectNextWord();
+                  this.selectNextWord(1, true);
                 }
                 break;
               case 'Backspace':
@@ -1170,6 +1125,50 @@
       }
     }
     return m;
+  };
+
+  constFalse = function() {
+    return false;
+  };
+
+  standardBlockTest = function(cell) {
+    return cell.textContent === '';
+  };
+
+  cellMatrixToWordList = function(matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) {
+    var currentCell, currentCells, currentCursor, isInBounds, lineStart, pushWord, words;
+    words = [];
+    currentCells = [];
+    isInBounds = (cursor) => {
+      return cursor.row < matrix.length && cursor.col < matrix[0].length;
+    };
+    pushWord = () => {
+      if (currentCells.length > 0) {
+        words.push(new Word(currentCells, direction));
+        return currentCells = [];
+      }
+    };
+    lineStart = {
+      row: 0,
+      col: 0
+    };
+    while (isInBounds(lineStart)) {
+      currentCursor = lineStart;
+      while (isInBounds(currentCursor)) {
+        currentCell = matrix[currentCursor.row][currentCursor.col];
+        if (isBlock(currentCell) || hasBarBefore(currentCell)) {
+          pushWord();
+        }
+        if (!isBlock(currentCell) && (currentCells[currentCells.length - 1] !== currentCell)) {
+          currentCells.push(currentCell);
+        }
+        currentCursor = direction.advance(currentCursor);
+      }
+      pushWord();
+      lineStart = direction.other.advance(lineStart);
+    }
+    words.sort(compareWordsDomOrder);
+    return words;
   };
 
   window.Kreuzwort = Kreuzwort;
