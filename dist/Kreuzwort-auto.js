@@ -148,11 +148,14 @@
   window.kreuzwortAutoInstances = [];
 
   window.addEventListener('load', () => {
-    return document.querySelectorAll('.kreuzwort').forEach((container) => {
+    document.querySelectorAll('.kreuzwort').forEach((container) => {
       var kreuzwort;
       kreuzwort = kreuzwortAutoSetup(container);
       return kreuzwortAutoInstances.push(kreuzwort);
     });
+    if (window.kreuzwortAutoInstances.length === 1) {
+      return window.kreuzwort = window.kreuzwortAutoInstances[0];
+    }
   });
 
 }).call(this);

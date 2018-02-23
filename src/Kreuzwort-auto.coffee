@@ -137,3 +137,5 @@ window.addEventListener 'load', () =>
     document.querySelectorAll('.kreuzwort').forEach (container) =>
         kreuzwort = kreuzwortAutoSetup(container)
         kreuzwortAutoInstances.push kreuzwort
+    if window.kreuzwortAutoInstances.length == 1
+        window.kreuzwort = window.kreuzwortAutoInstances[0]

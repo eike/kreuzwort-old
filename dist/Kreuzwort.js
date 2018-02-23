@@ -44,8 +44,8 @@
       return results;
     }
 
-    toString() {
-      var cell, unsolved;
+    toString(emptySymbol = '␣') {
+      var cell;
       return ((function() {
         var k, len, ref, results;
         ref = this.cells;
@@ -53,9 +53,8 @@
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
           if (cell.innerHTML === '&nbsp;') {
-            results.push('␣');
+            results.push(emptySymbol);
           } else {
-            unsolved = false;
             results.push(cell.innerHTML);
           }
         }
@@ -182,17 +181,15 @@
   Kreuzwort = (function() {
     class Kreuzwort {
       constructor(grid1, saveId, features = Kreuzwort.featuresFull, hiddenContainer = document.body) {
-        var cell, cellWords, elementAfterGrid, k, l, len, len1, len2, o, ref, ref1, ref2, word;
+        var cell, cellMatrix, cellWords, k, l, len, len1, len2, o, ref, ref1, ref2, word;
         this.grid = grid1;
         this.saveId = saveId;
         this.features = features;
         this.callbacks = {
           changed: [],
           input: [standardInputCallback],
-          save: [this.saveV2.bind(this)],
           selectionChanged: []
         };
-        this.cellMatrix = tableCellMatrix(this.grid);
         //@previousInput = createSecretInput()
         //@previousInput.onfocus = () =>
         //    @retrogressCursor()
@@ -221,9 +218,10 @@
             }
           });
         }
-        this.words = cellMatrixToWordList(this.cellMatrix, Kreuzwort.horizontal, (cell) => {
+        cellMatrix = tableCellMatrix(this.grid);
+        this.words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => {
           return cell.hasAttribute("data-clue-horizontal");
-        }).concat(cellMatrixToWordList(this.cellMatrix, Kreuzwort.vertical, (cell) => {
+        }).concat(cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => {
           return cell.hasAttribute("data-clue-vertical");
         }));
         this.numberWords();
@@ -239,7 +237,6 @@
             this._wordsAtCell.set(cell, cellWords);
           }
         }
-        elementAfterGrid = this.grid.nextSibling;
         this.secretInput.onkeydown = (e) => {
           return this.processInput(e);
         };
@@ -359,15 +356,6 @@
       repositionSecretInputs() {
         this.secretInput.style['top'] = `${this.grid.offsetTop}px`;
         return this.secretInput.style['height'] = `${this.grid.offsetHeight}px`;
-      }
-
-      cellAfter(cursor) {
-        var ref;
-        return (ref = this.cellMatrix[cursor.row]) != null ? ref[cursor.col] : void 0;
-      }
-
-      cellBefore(cursor, direction) {
-        return this.cellAfter(direction.retrogress(cursor));
       }
 
       isEntryCell(cell) {
@@ -560,9 +548,9 @@
         }
       }
 
-      saveV1() {
-        var cell, e, row, saveString;
-        saveString = ((function() {
+      serializeStateV1() {
+        var cell, row;
+        return ((function() {
           var k, len, ref, results;
           ref = this.grid.rows;
           results = [];
@@ -581,17 +569,27 @@
           }
           return results;
         }).call(this)).join(';');
-        try {
-          localStorage.setItem(`coffeeword-${this.saveId}-v1`, saveString);
-        } catch (error) {
-          e = error;
-        }
-        return saveString;
       }
 
-      saveV2() {
-        var cell, row, saveString;
-        saveString = ((function() {
+      unserializeStateV1(string) {
+        var cellString, col, grid, k, l, len, len1, ref, ref1, row, rowString;
+        // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        // but saved state from older version should not get lost.
+        grid = this.words[0].startingCell.parentElement.parentElement;
+        ref = string.split(';');
+        for (row = k = 0, len = ref.length; k < len; row = ++k) {
+          rowString = ref[row];
+          ref1 = rowString.split(',');
+          for (col = l = 0, len1 = ref1.length; l < len1; col = ++l) {
+            cellString = ref1[col];
+            grid.rows[row].cells[col].textContent = cellString;
+          }
+        }
+      }
+
+      serializeStateV2() {
+        var cell, row;
+        return ((function() {
           var k, len, ref, results;
           ref = this.grid.rows;
           results = [];
@@ -619,38 +617,20 @@
           }
           return results;
         }).call(this)).join('-');
-        if (this.saveId != null) {
-          try {
-            localStorage.setItem(`kreuzwort-${this.saveId}-v2`, saveString);
-          } catch (error) {
-
-          }
-        }
-        return saveString;
       }
 
-      loadV1(string) {
-        var cellString, col, k, l, len, len1, ref, ref1, row, rowString;
-        ref = string.split(';');
-        for (row = k = 0, len = ref.length; k < len; row = ++k) {
-          rowString = ref[row];
-          ref1 = rowString.split(',');
-          for (col = l = 0, len1 = ref1.length; l < len1; col = ++l) {
-            cellString = ref1[col];
-            this.cellAfter({row, col}).textContent = cellString;
-          }
-        }
-      }
-
-      loadV2(string) {
-        var cellString, col, k, l, len, len1, ref, ref1, row, rowString;
+      unserializeStateV2(string) {
+        var cellString, col, grid, k, l, len, len1, ref, ref1, row, rowString;
+        // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        // but saved state from older version should not get lost.
+        grid = this.words[0].startingCell.parentElement.parentElement;
         ref = string.split('-');
         for (row = k = 0, len = ref.length; k < len; row = ++k) {
           rowString = ref[row];
           ref1 = rowString.split('');
           for (col = l = 0, len1 = ref1.length; l < len1; col = ++l) {
             cellString = ref1[col];
-            this.cellAfter({row, col}).textContent = (function() {
+            grid.rows[row].cells[col].textContent = (function() {
               switch (cellString) {
                 case '_':
                   return ' ';
@@ -664,8 +644,49 @@
         }
       }
 
+      serializeStateV3() {
+        var word;
+        return ((function() {
+          var k, len, ref, results;
+          ref = this.words;
+          results = [];
+          for (k = 0, len = ref.length; k < len; k++) {
+            word = ref[k];
+            if (word.clue != null) {
+              results.push(word.toString('_'));
+            }
+          }
+          return results;
+        }).call(this)).join('-');
+      }
+
+      unserializeStateV3(string) {
+        var cell, cellIndex, cellStrings, k, l, len, len1, ref, ref1, word, wordIndex, wordStrings;
+        wordStrings = string.split('-');
+        ref = this.words.filter((word) => {
+          return word.clue != null;
+        });
+        // filter instead of when keyword makes indices line up
+        for (wordIndex = k = 0, len = ref.length; k < len; wordIndex = ++k) {
+          word = ref[wordIndex];
+          cellStrings = wordStrings[wordIndex].split('');
+          ref1 = word.cells;
+          for (cellIndex = l = 0, len1 = ref1.length; l < len1; cellIndex = ++l) {
+            cell = ref1[cellIndex];
+            cell.textContent = cellStrings[cellIndex];
+          }
+        }
+      }
+
       save() {
-        return this.trigger('save');
+        if (this.saveId != null) {
+          try {
+            localStorage.setItem(`kreuzwort-${this.saveId}-v2`, this.serializeStateV2());
+            return localStorage.setItem(`kreuzwort-${this.saveId}-v3`, this.serializeStateV3());
+          } catch (error) {
+
+          }
+        }
       }
 
       load() {
@@ -676,13 +697,13 @@
         try {
           params = new URL(location).searchParams;
           if (params.has(`${this.saveId}-v2`)) {
-            return this.loadV2(params.get(`${this.saveId}-v2`));
+            return this.unserializeStateV2(params.get(`${this.saveId}-v2`));
           } else if (params.has(`${this.saveId}-v1`)) {
-            return this.loadV1(params.get(`${this.saveId}-v1`));
+            return this.unserializeStateV1(params.get(`${this.saveId}-v1`));
           } else if (saveString = localStorage.getItem(`kreuzwort-${this.saveId}-v2`)) {
-            return this.loadV2(saveString);
+            return this.unserializeStateV2(saveString);
           } else {
-            return this.loadV1(localStorage.getItem(`coffeeword-${this.saveId}-v1`));
+            return this.unserializeStateV1(localStorage.getItem(`coffeeword-${this.saveId}-v1`));
           }
         } catch (error) {
 

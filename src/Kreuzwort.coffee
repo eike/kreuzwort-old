@@ -29,12 +29,11 @@ class Word
         for callback in @callbacks[event]
             callback(data, this)
     
-    toString: ->
+    toString: (emptySymbol = '␣') ->
         (for cell in @cells
             if cell.innerHTML == '&nbsp;'
-                '␣'
+                emptySymbol
             else
-                unsolved = false
                 cell.innerHTML).join ''
     
     addClass: (className = 'current-word') ->
@@ -92,10 +91,7 @@ class Kreuzwort
         @callbacks =
             changed: [ ]
             input: [ standardInputCallback ]
-            save: [ @saveV2.bind(this) ]
             selectionChanged: [ ]
-
-        @cellMatrix = tableCellMatrix @grid
 
         #@previousInput = createSecretInput()
         #@previousInput.onfocus = () =>
@@ -124,9 +120,10 @@ class Kreuzwort
                     @repositionSecretInputs()
                     @focus event.target
         
-        @words = cellMatrixToWordList(@cellMatrix, Kreuzwort.horizontal, (cell) => 
+        cellMatrix = tableCellMatrix @grid
+        @words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
                 cell.hasAttribute("data-clue-horizontal")
-            ).concat cellMatrixToWordList(@cellMatrix, Kreuzwort.vertical, (cell) => 
+            ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
                 cell.hasAttribute("data-clue-vertical"))
         @numberWords()
         
@@ -136,8 +133,6 @@ class Kreuzwort
                 cellWords = @wordsAtCell cell
                 cellWords.push word
                 @_wordsAtCell.set cell, cellWords
-        
-        elementAfterGrid = @grid.nextSibling
         
         @secretInput.onkeydown = (e) => @processInput e
         @repositionSecretInputs()
@@ -207,12 +202,6 @@ class Kreuzwort
     repositionSecretInputs: ->
         @secretInput.style['top'] = "#{@grid.offsetTop}px"
         @secretInput.style['height'] = "#{@grid.offsetHeight}px"
-    
-    cellAfter: (cursor) ->
-        @cellMatrix[cursor.row]?[cursor.col]
-    
-    cellBefore: (cursor, direction) ->
-        @cellAfter(direction.retrogress(cursor))
     
     isEntryCell: (cell) -> cell? and cell.textContent != ""
     
@@ -339,17 +328,22 @@ class Kreuzwort
                 word.clue = word.toString()
         return
     
-    saveV1: ->
-        saveString = (for row in @grid.rows
+    serializeStateV1: ->
+        (for row in @grid.rows
             (cell.textContent for cell in row.cells).join ','
         ).join ';'
-        try
-            localStorage.setItem("coffeeword-#{@saveId}-v1", saveString)
-        catch e
-        saveString
+
+    unserializeStateV1: (string) ->
+        # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        # but saved state from older version should not get lost.
+        grid = @words[0].startingCell.parentElement.parentElement
+        for rowString, row in string.split(';')
+            for cellString, col in rowString.split(',')
+                grid.rows[row].cells[col].textContent = cellString
+        return
     
-    saveV2: ->
-        saveString = (for row in @grid.rows
+    serializeStateV2: ->
+        (for row in @grid.rows
             (for cell in row.cells
                 switch cell.textContent
                     when ' ' then '_'
@@ -357,40 +351,49 @@ class Kreuzwort
                     else cell.textContent
             ).join ''
         ).join '-'
-        if @saveId?
-            try localStorage.setItem("kreuzwort-#{@saveId}-v2", saveString)
-            catch
-        saveString
     
-    loadV1: (string) ->
-        for rowString, row in string.split(';')
-            for cellString, col in rowString.split(',')
-                @cellAfter({row, col}).textContent = cellString
-        return
-    
-    loadV2: (string) ->
+    unserializeStateV2: (string) ->
+        # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        # but saved state from older version should not get lost.
+        grid = @words[0].startingCell.parentElement.parentElement
         for rowString, row in string.split('-')
             for cellString, col in rowString.split('')
-                @cellAfter({row, col}).textContent = switch cellString
+                grid.rows[row].cells[col].textContent = switch cellString
                     when '_' then ' '
                     when '.' then ''
                     else cellString
         return
     
-    save: -> @trigger('save')
+    serializeStateV3: ->
+        (word.toString('_') for word in @words when word.clue?).join('-')
+    
+    unserializeStateV3: (string) ->
+        wordStrings = string.split('-')
+        for word, wordIndex in @words.filter((word) => word.clue?) # filter instead of when keyword makes indices line up
+            cellStrings = wordStrings[wordIndex].split ''
+            for cell, cellIndex in word.cells
+                cell.textContent = cellStrings[cellIndex]
+        return
+    
+    save: -> 
+        if @saveId?
+            try 
+                localStorage.setItem("kreuzwort-#{@saveId}-v2", @serializeStateV2())
+                localStorage.setItem("kreuzwort-#{@saveId}-v3", @serializeStateV3())
+            catch
     
     load: ->
         return unless @saveId?
         try
             params = new URL(location).searchParams
             if params.has("#{@saveId}-v2")
-                @loadV2(params.get("#{@saveId}-v2"))
+                @unserializeStateV2(params.get("#{@saveId}-v2"))
             else if params.has("#{@saveId}-v1")
-                @loadV1(params.get("#{@saveId}-v1"))
+                @unserializeStateV1(params.get("#{@saveId}-v1"))
             else if saveString = localStorage.getItem("kreuzwort-#{@saveId}-v2")
-                @loadV2(saveString)
+                @unserializeStateV2(saveString)
             else
-                @loadV1(localStorage.getItem("coffeeword-#{@saveId}-v1"))
+                @unserializeStateV1(localStorage.getItem("coffeeword-#{@saveId}-v1"))
         catch
             # I don’t think we can do anything useful when local storage does not work
     
