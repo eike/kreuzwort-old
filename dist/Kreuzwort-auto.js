@@ -51,7 +51,7 @@
   };
 
   window.kreuzwortAutoSetup = (container) => {
-    var checkButton, clearButton, controlsDiv, createButton, currentClueDiv, direction, directions, elementAfterGrid, grid, head, i, j, kreuzwort, len, len1, localStrings, printEmptyButton, printFullButton, ref, word;
+    var checkButton, clearButton, controlsDiv, createButton, currentClueDiv, direction, directions, elementAfterGrid, grid, head, i, kreuzwort, len, localStrings, printEmptyButton, printFullButton;
     grid = container.querySelector('table');
     elementAfterGrid = grid.nextElementSibling;
     kreuzwort = new Kreuzwort(grid, container.id, Kreuzwort.featuresFull, container);
@@ -74,15 +74,6 @@
       return currentClueDiv.hidden = false;
     });
     container.insertBefore(currentClueDiv, elementAfterGrid);
-    ref = kreuzwort.words;
-    
-    // TODO: Auto-jumping might be annoying
-    for (i = 0, len = ref.length; i < len; i++) {
-      word = ref[i];
-      word.addCallback('completed', () => {
-        return kreuzwort.selectNextWord(1, true);
-      });
-    }
     controlsDiv = document.createElement('div');
     controlsDiv.className = 'controls';
     checkButton = document.createElement('button');
@@ -143,8 +134,8 @@
     }
     if (!container.classList.contains('compact')) {
       directions = [Kreuzwort.horizontal, Kreuzwort.vertical];
-      for (j = 0, len1 = directions.length; j < len1; j++) {
-        direction = directions[j];
+      for (i = 0, len = directions.length; i < len; i++) {
+        direction = directions[i];
         head = document.createElement('h2');
         head.textContent = localStrings[direction];
         container.insertBefore(head, elementAfterGrid);

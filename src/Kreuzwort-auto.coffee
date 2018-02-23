@@ -71,11 +71,6 @@ window.kreuzwortAutoSetup = (container) =>
         )
     container.insertBefore currentClueDiv, elementAfterGrid
     
-    # TODO: Auto-jumping might be annoying
-    for word in kreuzwort.words
-        word.addCallback 'completed', =>
-            kreuzwort.selectNextWord 1, true
-    
     controlsDiv = document.createElement 'div'
     controlsDiv.className = 'controls'
     
