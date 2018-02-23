@@ -145,8 +145,14 @@
     return kreuzwort;
   };
 
+  window.kreuzwortAutoInstances = [];
+
   window.addEventListener('load', () => {
-    return document.querySelectorAll('.kreuzwort').forEach(kreuzwortAutoSetup);
+    return document.querySelectorAll('.kreuzwort').forEach((container) => {
+      var kreuzwort;
+      kreuzwort = kreuzwortAutoSetup(container);
+      return kreuzwortAutoInstances.push(kreuzwort);
+    });
   });
 
 }).call(this);

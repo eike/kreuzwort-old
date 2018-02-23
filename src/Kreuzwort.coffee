@@ -88,11 +88,7 @@ Object.defineProperties Word.prototype,
         get: -> @cells[0]
 
 class Kreuzwort
-    @instances: []
-    
     constructor: (@grid, @saveId, @features = Kreuzwort.featuresFull, hiddenContainer = document.body) ->
-        Kreuzwort.instances.push this
-        
         @callbacks =
             changed: [ ]
             input: [ standardInputCallback ]
@@ -675,7 +671,6 @@ cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isBlock = 
         lineStart = direction.other.advance lineStart
     
     words.sort compareWordsDomOrder
-        
     return words
 
 

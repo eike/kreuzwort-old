@@ -186,7 +186,6 @@
         this.grid = grid1;
         this.saveId = saveId;
         this.features = features;
-        Kreuzwort.instances.push(this);
         this.callbacks = {
           changed: [],
           input: [standardInputCallback],
@@ -836,8 +835,6 @@
       }
 
     };
-
-    Kreuzwort.instances = [];
 
     Kreuzwort.featuresFull = {
       writeNewCells: false,

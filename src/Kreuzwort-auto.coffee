@@ -131,5 +131,9 @@ window.kreuzwortAutoSetup = (container) =>
     
     return kreuzwort
 
+window.kreuzwortAutoInstances = []
+
 window.addEventListener 'load', () =>
-    document.querySelectorAll('.kreuzwort').forEach kreuzwortAutoSetup
+    document.querySelectorAll('.kreuzwort').forEach (container) =>
+        kreuzwort = kreuzwortAutoSetup(container)
+        kreuzwortAutoInstances.push kreuzwort
