@@ -15,7 +15,7 @@
                 event.target.remove();
 
                 var table = document.createElement('table');
-                table.classList.add('blocked');
+                table.classList.add(event.target.elements.type.value);
                 for (var row = 0; row < height; row++) {
                     var tr = document.createElement('tr');
                     for (var col = 0; col < width; col++) {
@@ -28,7 +28,7 @@
         
                 container.appendChild(table);
         
-                window.kreuzwort = new Kreuzwort(table, 'unnamed', Kreuzwort.featuresConstruction);
+                window.kreuzwort = kreuzwortAutoSetup(document.body);
             }
             
             window.addEventListener('load', function() {
@@ -37,11 +37,15 @@
         </script>
         <link rel="stylesheet" href="style.css" />
     </head>
-    <body class=crossword>
+    <body class="construction compact">
         <h1>Crossword Setter</h1>
         <form>
             <label>Breite: <input name="width" type="number" value=15></label>
             <label>Höhe: <input name="height" type="number" value=15></label>
+            <select name="type">
+                <option value="barred">mit Balken</option>
+                <option value="blocked">mit Blöcken</option>
+            </select>
             <button>Gitter erstellen</button>
         </form>
     </body>
