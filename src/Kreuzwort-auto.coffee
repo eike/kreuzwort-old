@@ -63,7 +63,6 @@ window.kreuzwortAutoSetup = (container) =>
                     """
             else
                 "<i>#{localStrings.noClue}</i>"
-        console.log kreuzwort.currentCell
         for otherWord in kreuzwort.wordsAtCell kreuzwort.currentCell
             if otherWord != data.word and otherWord.clue?
                 currentClueDiv.innerHTML += """<div class="other-clue">#{otherWord.clue}</div>"""

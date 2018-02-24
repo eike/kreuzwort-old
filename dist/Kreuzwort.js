@@ -15,7 +15,7 @@
   // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   // See the License for the specific language governing permissions and
   // limitations under the License.
-  var Kreuzwort, Word, cellMatrixToWordList, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
+  var Kreuzwort, Word, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
 
   Word = class Word {
     constructor(cells1, direction1) {
@@ -187,7 +187,7 @@
         this.saveId = saveId1;
         this.features = features;
         this.callbacks = {
-          changed: [],
+          changed: [this.save.bind(this)],
           input: [standardInputCallback],
           selectionChanged: []
         };
@@ -196,20 +196,24 @@
         //    @retrogressCursor()
         //    @secretInput.focus()
         //document.body.appendChild @previousInput
-        this.secretInput = createSecretInput();
-        // TODO: When @secretInput looses focus, maybe grey-out current word
-        hiddenContainer.appendChild(this.secretInput);
-        this.cursorSpan = document.createElement('span');
-        this.cursorSpan.className = 'cursor';
-        this.cursorSpan.style['position'] = 'absolute';
-        hiddenContainer.appendChild(this.cursorSpan);
-        ref = this.cells;
-        
+
         //@nextInput = createSecretInput()
         //@nextInput.onfocus = () =>
         //    @advanceCursor()
         //    @secretInput.focus()
         //document.body.appendChild @nextInput
+        this.secretInput = createSecretInput();
+        this.secretInput.onkeydown = (e) => {
+          return this.processInput(e);
+        };
+        // TODO: When @secretInput looses focus, maybe grey-out current word
+        hiddenContainer.appendChild(this.secretInput);
+        this.repositionSecretInputs();
+        this.cursorSpan = document.createElement('span');
+        this.cursorSpan.className = 'cursor';
+        this.cursorSpan.style['position'] = 'absolute';
+        hiddenContainer.appendChild(this.cursorSpan);
+        ref = this.cells;
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
           cell.addEventListener('click', (event) => {
@@ -219,12 +223,6 @@
             }
           });
         }
-        
-        //cellMatrix = tableCellMatrix @grid
-        //@words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
-        //        cell.hasAttribute("data-clue-horizontal")
-        //    ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
-        //        cell.hasAttribute("data-clue-vertical"))
         this.numberWords();
         this._wordsAtCell = new Map();
         ref1 = this.words;
@@ -238,10 +236,6 @@
             this._wordsAtCell.set(cell, cellWords);
           }
         }
-        this.secretInput.onkeydown = (e) => {
-          return this.processInput(e);
-        };
-        this.repositionSecretInputs();
         this.number = 0;
         this.numberTimeStamp = 0;
         this.load();
@@ -528,7 +522,6 @@
             }
           }
         }
-        this.save();
         if (!preserveNumber) {
           return this.number = 0;
         }
@@ -690,7 +683,8 @@
       save() {
         if (this.saveId != null) {
           try {
-            localStorage.setItem(`kreuzwort-${this.saveId}-v2`, this.serializeStateV2());
+            
+            //localStorage.setItem("kreuzwort-#{@saveId}-v2", @serializeStateV2())
             return localStorage.setItem(`kreuzwort-${this.saveId}-v3`, this.serializeStateV3());
           } catch (error) {
 
@@ -699,20 +693,39 @@
       }
 
       load() {
-        var params, saveString;
+        var fun, k, key, l, len, len1, loaders, params, string;
         if (this.saveId == null) {
           return;
         }
+        loaders = [
+          {
+            key: `kreuzwort-${this.saveId}-v3`,
+            fun: this.unserializeStateV3
+          },
+          {
+            key: `kreuzwort-${this.saveId}-v2`,
+            fun: this.unserializeStateV2
+          },
+          {
+            key: `crossword-${this.saveId}-v1`,
+            fun: this.unserializeStateV1
+          }
+        ];
+        params = new URL(location).searchParams;
+        for (k = 0, len = loaders.length; k < len; k++) {
+          ({key, fun} = loaders[k]);
+          if (params.has(key)) {
+            fun.bind(this)(params.get(key));
+            return;
+          }
+        }
         try {
-          params = new URL(location).searchParams;
-          if (params.has(`${this.saveId}-v2`)) {
-            return this.unserializeStateV2(params.get(`${this.saveId}-v2`));
-          } else if (params.has(`${this.saveId}-v1`)) {
-            return this.unserializeStateV1(params.get(`${this.saveId}-v1`));
-          } else if (saveString = localStorage.getItem(`kreuzwort-${this.saveId}-v2`)) {
-            return this.unserializeStateV2(saveString);
-          } else {
-            return this.unserializeStateV1(localStorage.getItem(`coffeeword-${this.saveId}-v1`));
+          for (l = 0, len1 = loaders.length; l < len1; l++) {
+            ({key, fun} = loaders[l]);
+            if ((string = localStorage.getItem(key)) != null) {
+              fun.bind(this)(string);
+              return;
+            }
           }
         } catch (error) {
 
@@ -1168,7 +1181,7 @@
     return cell.textContent === '';
   };
 
-  cellMatrixToWordList = function(matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) {
+  window.cellMatrixToWordList = function(matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) {
     var currentCell, currentCells, currentCursor, isInBounds, lineStart, pushWord, words;
     words = [];
     currentCells = [];

@@ -63,7 +63,6 @@
     kreuzwort.addCallback('selectionChanged', (data) => {
       var i, len, otherWord, ref, ref1;
       currentClueDiv.innerHTML = ((ref = data.word) != null ? ref.clue : void 0) != null ? `<span class="current-word-position">\n    ${localStrings[data.word.direction]}, ${data.word.number}\n</span>\n${data.word.clue} (${data.word.length})` : `<i>${localStrings.noClue}</i>`;
-      console.log(kreuzwort.currentCell);
       ref1 = kreuzwort.wordsAtCell(kreuzwort.currentCell);
       for (i = 0, len = ref1.length; i < len; i++) {
         otherWord = ref1[i];

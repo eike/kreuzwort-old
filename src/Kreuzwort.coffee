@@ -89,7 +89,7 @@ Object.defineProperties Word.prototype,
 class Kreuzwort
     constructor: (@cells, @words, @saveId, @features = Kreuzwort.featuresFull, hiddenContainer = document.body) ->
         @callbacks =
-            changed: [ ]
+            changed: [ @save.bind(this) ]
             input: [ standardInputCallback ]
             selectionChanged: [ ]
 
@@ -99,32 +99,29 @@ class Kreuzwort
         #    @secretInput.focus()
         #document.body.appendChild @previousInput
         
+        #@nextInput = createSecretInput()
+        #@nextInput.onfocus = () =>
+        #    @advanceCursor()
+        #    @secretInput.focus()
+        #document.body.appendChild @nextInput
+        
         @secretInput = createSecretInput()
+        @secretInput.onkeydown = (e) => @processInput e
         # TODO: When @secretInput looses focus, maybe grey-out current word
         hiddenContainer.appendChild @secretInput
+        @repositionSecretInputs()
         
         @cursorSpan = document.createElement('span')
         @cursorSpan.className = 'cursor'
         @cursorSpan.style['position'] = 'absolute'
         hiddenContainer.appendChild @cursorSpan
         
-        #@nextInput = createSecretInput()
-        #@nextInput.onfocus = () =>
-        #    @advanceCursor()
-        #    @secretInput.focus()
-        #document.body.appendChild @nextInput
-
         for cell in @cells
             cell.addEventListener 'click', (event) =>
                 if @isEntryCell event.target
                     @repositionSecretInputs()
                     @focus event.target
         
-        #cellMatrix = tableCellMatrix @grid
-        #@words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
-        #        cell.hasAttribute("data-clue-horizontal")
-        #    ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
-        #        cell.hasAttribute("data-clue-vertical"))
         @numberWords()
         
         @_wordsAtCell = new Map()
@@ -133,9 +130,6 @@ class Kreuzwort
                 cellWords = @wordsAtCell cell
                 cellWords.push word
                 @_wordsAtCell.set cell, cellWords
-        
-        @secretInput.onkeydown = (e) => @processInput e
-        @repositionSecretInputs()
         
         @number = 0
         @numberTimeStamp = 0
@@ -314,8 +308,7 @@ class Kreuzwort
                 when 'Delete'
                     if @features.writeNewCells
                         @write ''
-        
-        @save()
+
         @number = 0 unless preserveNumber
         
     clear: (clearStorage = true) ->
@@ -384,24 +377,30 @@ class Kreuzwort
     save: -> 
         if @saveId?
             try 
-                localStorage.setItem("kreuzwort-#{@saveId}-v2", @serializeStateV2())
+                #localStorage.setItem("kreuzwort-#{@saveId}-v2", @serializeStateV2())
                 localStorage.setItem("kreuzwort-#{@saveId}-v3", @serializeStateV3())
             catch
     
     load: ->
         return unless @saveId?
+        loaders = [
+            { key: "kreuzwort-#{@saveId}-v3", fun: @unserializeStateV3 },
+            { key: "kreuzwort-#{@saveId}-v2", fun: @unserializeStateV2 },
+            { key: "crossword-#{@saveId}-v1", fun: @unserializeStateV1 }
+            ]
+        params = new URL(location).searchParams
+        for { key, fun } in loaders
+            if params.has key
+                fun.bind(this)(params.get(key))
+                return
         try
-            params = new URL(location).searchParams
-            if params.has("#{@saveId}-v2")
-                @unserializeStateV2(params.get("#{@saveId}-v2"))
-            else if params.has("#{@saveId}-v1")
-                @unserializeStateV1(params.get("#{@saveId}-v1"))
-            else if saveString = localStorage.getItem("kreuzwort-#{@saveId}-v2")
-                @unserializeStateV2(saveString)
-            else
-                @unserializeStateV1(localStorage.getItem("coffeeword-#{@saveId}-v1"))
+            for { key, fun } in loaders
+                if (string = localStorage.getItem(key))?
+                    fun.bind(this)(string)
+                    return
         catch
             # I don’t think we can do anything useful when local storage does not work
+        return
     
     progressURL: ->
         url = new URL(location)
@@ -658,7 +657,7 @@ window.tableCellMatrix = (table) ->
 constFalse = -> false
 standardBlockTest = (cell) -> cell.textContent == ''
 
-cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) ->
+window.cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isBlock = standardBlockTest) ->
     words = []
     currentCells = []
     isInBounds = (cursor) =>
