@@ -46,7 +46,7 @@ german =
 window.kreuzwortAutoSetup = (container) =>
     grid = container.querySelector('table')
     elementAfterGrid = grid.nextElementSibling
-    kreuzwort = new Kreuzwort(grid, container.id, Kreuzwort.featuresFull, container)
+    kreuzwort = kreuzwortFromGrid(grid, container.id, container)
     # TODO: Better way to choose this automatically (HTML lang attribute?)
     localStrings = german
     

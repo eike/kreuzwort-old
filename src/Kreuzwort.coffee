@@ -87,7 +87,7 @@ Object.defineProperties Word.prototype,
         get: -> @cells[0]
 
 class Kreuzwort
-    constructor: (@grid, @saveId, @features = Kreuzwort.featuresFull, hiddenContainer = document.body) ->
+    constructor: (@cells, @words, @saveId, @features = Kreuzwort.featuresFull, hiddenContainer = document.body) ->
         @callbacks =
             changed: [ ]
             input: [ standardInputCallback ]
@@ -114,17 +114,17 @@ class Kreuzwort
         #    @secretInput.focus()
         #document.body.appendChild @nextInput
 
-        for cell in @grid.querySelectorAll 'td'
+        for cell in @cells
             cell.addEventListener 'click', (event) =>
                 if @isEntryCell event.target
                     @repositionSecretInputs()
                     @focus event.target
         
-        cellMatrix = tableCellMatrix @grid
-        @words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
-                cell.hasAttribute("data-clue-horizontal")
-            ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
-                cell.hasAttribute("data-clue-vertical"))
+        #cellMatrix = tableCellMatrix @grid
+        #@words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
+        #        cell.hasAttribute("data-clue-horizontal")
+        #    ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
+        #        cell.hasAttribute("data-clue-vertical"))
         @numberWords()
         
         @_wordsAtCell = new Map()
@@ -166,11 +166,11 @@ class Kreuzwort
         return
     
     explicitNumbers: ->
-        td.getAttribute('data-explicit-number') for td in @grid.querySelectorAll('td[data-explicit-number]')
+        cell.getAttribute('data-explicit-number') for cell in @cells when cell.hasAttribute('data-explicit-number')
     
     unnumberCells: ->
-        for td in @grid.querySelectorAll('td[data-cell-number]')
-            td.removeAttribute('data-cell-number')
+        for cell in @cells
+            cell.removeAttribute('data-cell-number')
     
     # TODO: A more elegant way of setting the standard for numbering?
     numberWords: (words = @words.filter((word) => word.clue?)) ->
@@ -182,8 +182,9 @@ class Kreuzwort
                 yield number unless (exclude.indexOf(number) >= 0)
             return
         
-        for td in @grid.querySelectorAll('td[data-explicit-number]')
-            td.setAttribute('data-cell-number', td.getAttribute('data-explicit-number'))
+        for cell in @cells
+            if (explicitNumber = cell.getAttribute('data-explicit-number'))?
+                cell.setAttribute('data-cell-number', explicitNumber)
         
         for word in words.sort compareWordsDomOrder
             unless word.number?
@@ -194,14 +195,18 @@ class Kreuzwort
         @numberWords()
     
     cellWithNumber: (number) ->
-        @grid.querySelector("td[data-cell-number='#{number}']")
+        for cell in @cells
+            if cell.getAttribute('data-cell-number') == number
+                return cell
+        return null
     
     wordsAtCell: (cell) ->
         return @_wordsAtCell.get(cell) or []
     
     repositionSecretInputs: ->
-        @secretInput.style['top'] = "#{@grid.offsetTop}px"
-        @secretInput.style['height'] = "#{@grid.offsetHeight}px"
+        # TODO: Repositioning of secret input
+        #@secretInput.style['top'] = "#{@grid.offsetTop}px"
+        #@secretInput.style['height'] = "#{@grid.offsetHeight}px"
     
     isEntryCell: (cell) -> cell? and cell.textContent != ""
     
@@ -301,7 +306,7 @@ class Kreuzwort
                 when 'Backspace'
                     cell = @currentWord.cells[@positionInWord - 1]
                     if @isEntryCell cell
-                        cell.innerHTML = '&nbsp;'
+                        cell.textContent = ' '
                         @cellChanged cell
                         @positionInWord -= 1
                 when '|'
@@ -314,10 +319,11 @@ class Kreuzwort
         @number = 0 unless preserveNumber
         
     clear: (clearStorage = true) ->
-        for cell in @grid.querySelectorAll('td:not(:empty)')
-            cell.innerHTML = "&nbsp;"
+        for cell in @cells when cell.textContent != ''
+            cell.textContent = ' '
         if clearStorage
             try
+                console.warn('TODO: Move storage clearing')
                 localStorage.removeItem("coffeeword-#{@saveId}-v1")
             catch
         return
@@ -329,6 +335,7 @@ class Kreuzwort
         return
     
     serializeStateV1: ->
+        console.warn('serializeStateV1 is deprecated, use the version of serializeState with the highest number')
         (for row in @grid.rows
             (cell.textContent for cell in row.cells).join ','
         ).join ';'
@@ -336,13 +343,14 @@ class Kreuzwort
     unserializeStateV1: (string) ->
         # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
         # but saved state from older version should not get lost.
-        grid = @words[0].startingCell.parentElement.parentElement
+        grid = @cells[0].parentElement.parentElement
         for rowString, row in string.split(';')
             for cellString, col in rowString.split(',')
                 grid.rows[row].cells[col].textContent = cellString
         return
     
     serializeStateV2: ->
+        console.warn('serializeStateV2 is deprecated, use the version of serializeState with the highest number')
         (for row in @grid.rows
             (for cell in row.cells
                 switch cell.textContent
@@ -355,7 +363,7 @@ class Kreuzwort
     unserializeStateV2: (string) ->
         # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
         # but saved state from older version should not get lost.
-        grid = @words[0].startingCell.parentElement.parentElement
+        grid = @cells[0].parentElement.parentElement
         for rowString, row in string.split('-')
             for cellString, col in rowString.split('')
                 grid.rows[row].cells[col].textContent = switch cellString
@@ -365,14 +373,12 @@ class Kreuzwort
         return
     
     serializeStateV3: ->
-        (word.toString('_') for word in @words when word.clue?).join('-')
+        (cell.textContent for cell in @cells).join('-')
     
     unserializeStateV3: (string) ->
-        wordStrings = string.split('-')
-        for word, wordIndex in @words.filter((word) => word.clue?) # filter instead of when keyword makes indices line up
-            cellStrings = wordStrings[wordIndex].split ''
-            for cell, cellIndex in word.cells
-                cell.textContent = cellStrings[cellIndex]
+        cellStrings = string.split('-')
+        for cell, cellIndex in @cells # filter instead of when keyword makes indices line up
+            cell.textContent = cellStrings[cellIndex]
         return
     
     save: -> 
@@ -403,6 +409,7 @@ class Kreuzwort
         return url
     
     check: ->
+        console.warn('TODO: make checking work again')
         solutionHash = @grid.getAttribute('data-solution-hash-v1')
         return solutionHash == @currentHash()
     
@@ -410,6 +417,7 @@ class Kreuzwort
         hash @saveV1()
     
     gridHTML: () ->
+        console.warn('TODO: find better solution for grid creation')
         word = @currentWord
         @currentWord = null
         @grid.setAttribute('data-solution-hash-v1', @currentHash())
@@ -525,11 +533,11 @@ Object.defineProperties Kreuzwort.prototype,
                 @_currentWord?.trigger 'selected'
                 @positionInWord = @_currentWord?.firstEmptyPosition
     numberOfBlacks:
-        get: -> @grid.querySelectorAll('td:empty').length
+        get: -> @cells.filter((cell) => cell.textContent == '').length
     numberOfClues:
         get: -> @words.filter((word) => word.clue?).length
     numberOfWhites:
-        get: -> @grid.querySelectorAll('td:not(:empty)').length
+        get: -> @cells.filter((cell) => cell.textContent != '').length
     positionInWord:
         get: -> @_positionInWord
         set: (newPosition) ->
@@ -676,5 +684,15 @@ cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isBlock = 
     words.sort compareWordsDomOrder
     return words
 
+# TODO: make this a static method of Kreuzwort?
+window.kreuzwortFromGrid = (grid, saveId, hiddenContainer) =>
+    cells = grid.querySelectorAll('td')
+    cellMatrix = tableCellMatrix grid
+    words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
+            cell.hasAttribute("data-clue-horizontal")
+        ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
+            cell.hasAttribute("data-clue-vertical"))
+    return new Kreuzwort(cells, words, saveId, undefined, hiddenContainer)
+    
 
 window.Kreuzwort = Kreuzwort

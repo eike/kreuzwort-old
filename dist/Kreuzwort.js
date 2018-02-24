@@ -180,10 +180,11 @@
 
   Kreuzwort = (function() {
     class Kreuzwort {
-      constructor(grid1, saveId, features = Kreuzwort.featuresFull, hiddenContainer = document.body) {
-        var cell, cellMatrix, cellWords, k, l, len, len1, len2, o, ref, ref1, ref2, word;
-        this.grid = grid1;
-        this.saveId = saveId;
+      constructor(cells1, words1, saveId1, features = Kreuzwort.featuresFull, hiddenContainer = document.body) {
+        var cell, cellWords, k, l, len, len1, len2, o, ref, ref1, ref2, word;
+        this.cells = cells1;
+        this.words = words1;
+        this.saveId = saveId1;
         this.features = features;
         this.callbacks = {
           changed: [],
@@ -202,7 +203,7 @@
         this.cursorSpan.className = 'cursor';
         this.cursorSpan.style['position'] = 'absolute';
         hiddenContainer.appendChild(this.cursorSpan);
-        ref = this.grid.querySelectorAll('td');
+        ref = this.cells;
         
         //@nextInput = createSecretInput()
         //@nextInput.onfocus = () =>
@@ -218,12 +219,12 @@
             }
           });
         }
-        cellMatrix = tableCellMatrix(this.grid);
-        this.words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => {
-          return cell.hasAttribute("data-clue-horizontal");
-        }).concat(cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => {
-          return cell.hasAttribute("data-clue-vertical");
-        }));
+        
+        //cellMatrix = tableCellMatrix @grid
+        //@words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
+        //        cell.hasAttribute("data-clue-horizontal")
+        //    ).concat cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => 
+        //        cell.hasAttribute("data-clue-vertical"))
         this.numberWords();
         this._wordsAtCell = new Map();
         ref1 = this.words;
@@ -284,23 +285,25 @@
       }
 
       explicitNumbers() {
-        var k, len, ref, results, td;
-        ref = this.grid.querySelectorAll('td[data-explicit-number]');
+        var cell, k, len, ref, results;
+        ref = this.cells;
         results = [];
         for (k = 0, len = ref.length; k < len; k++) {
-          td = ref[k];
-          results.push(td.getAttribute('data-explicit-number'));
+          cell = ref[k];
+          if (cell.hasAttribute('data-explicit-number')) {
+            results.push(cell.getAttribute('data-explicit-number'));
+          }
         }
         return results;
       }
 
       unnumberCells() {
-        var k, len, ref, results, td;
-        ref = this.grid.querySelectorAll('td[data-cell-number]');
+        var cell, k, len, ref, results;
+        ref = this.cells;
         results = [];
         for (k = 0, len = ref.length; k < len; k++) {
-          td = ref[k];
-          results.push(td.removeAttribute('data-cell-number'));
+          cell = ref[k];
+          results.push(cell.removeAttribute('data-cell-number'));
         }
         return results;
       }
@@ -310,7 +313,7 @@
       numberWords(words = this.words.filter((word) => {
           return word.clue != null;
         })) {
-        var cellNumberGenerator, k, l, len, len1, ref, ref1, results, td, word;
+        var cell, cellNumberGenerator, explicitNumber, k, l, len, len1, ref, ref1, results, word;
         cellNumberGenerator = (function*(exclude) {
           var num, number;
           num = 0;
@@ -322,10 +325,12 @@
             }
           }
         })(this.explicitNumbers());
-        ref = this.grid.querySelectorAll('td[data-explicit-number]');
+        ref = this.cells;
         for (k = 0, len = ref.length; k < len; k++) {
-          td = ref[k];
-          td.setAttribute('data-cell-number', td.getAttribute('data-explicit-number'));
+          cell = ref[k];
+          if ((explicitNumber = cell.getAttribute('data-explicit-number')) != null) {
+            cell.setAttribute('data-cell-number', explicitNumber);
+          }
         }
         ref1 = words.sort(compareWordsDomOrder);
         results = [];
@@ -346,18 +351,26 @@
       }
 
       cellWithNumber(number) {
-        return this.grid.querySelector(`td[data-cell-number='${number}']`);
+        var cell, k, len, ref;
+        ref = this.cells;
+        for (k = 0, len = ref.length; k < len; k++) {
+          cell = ref[k];
+          if (cell.getAttribute('data-cell-number') === number) {
+            return cell;
+          }
+        }
+        return null;
       }
 
       wordsAtCell(cell) {
         return this._wordsAtCell.get(cell) || [];
       }
 
-      repositionSecretInputs() {
-        this.secretInput.style['top'] = `${this.grid.offsetTop}px`;
-        return this.secretInput.style['height'] = `${this.grid.offsetHeight}px`;
-      }
+      repositionSecretInputs() {}
 
+      // TODO: Repositioning of secret input
+      //@secretInput.style['top'] = "#{@grid.offsetTop}px"
+      //@secretInput.style['height'] = "#{@grid.offsetHeight}px"
       isEntryCell(cell) {
         return (cell != null) && cell.textContent !== "";
       }
@@ -498,7 +511,7 @@
               case 'Backspace':
                 cell = this.currentWord.cells[this.positionInWord - 1];
                 if (this.isEntryCell(cell)) {
-                  cell.innerHTML = '&nbsp;';
+                  cell.textContent = ' ';
                   this.cellChanged(cell);
                   this.positionInWord -= 1;
                 }
@@ -523,13 +536,16 @@
 
       clear(clearStorage = true) {
         var cell, k, len, ref;
-        ref = this.grid.querySelectorAll('td:not(:empty)');
+        ref = this.cells;
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
-          cell.innerHTML = "&nbsp;";
+          if (cell.textContent !== '') {
+            cell.textContent = ' ';
+          }
         }
         if (clearStorage) {
           try {
+            console.warn('TODO: Move storage clearing');
             localStorage.removeItem(`coffeeword-${this.saveId}-v1`);
           } catch (error) {
 
@@ -550,6 +566,7 @@
 
       serializeStateV1() {
         var cell, row;
+        console.warn('serializeStateV1 is deprecated, use the version of serializeState with the highest number');
         return ((function() {
           var k, len, ref, results;
           ref = this.grid.rows;
@@ -575,7 +592,7 @@
         var cellString, col, grid, k, l, len, len1, ref, ref1, row, rowString;
         // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
         // but saved state from older version should not get lost.
-        grid = this.words[0].startingCell.parentElement.parentElement;
+        grid = this.cells[0].parentElement.parentElement;
         ref = string.split(';');
         for (row = k = 0, len = ref.length; k < len; row = ++k) {
           rowString = ref[row];
@@ -589,6 +606,7 @@
 
       serializeStateV2() {
         var cell, row;
+        console.warn('serializeStateV2 is deprecated, use the version of serializeState with the highest number');
         return ((function() {
           var k, len, ref, results;
           ref = this.grid.rows;
@@ -623,7 +641,7 @@
         var cellString, col, grid, k, l, len, len1, ref, ref1, row, rowString;
         // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
         // but saved state from older version should not get lost.
-        grid = this.words[0].startingCell.parentElement.parentElement;
+        grid = this.cells[0].parentElement.parentElement;
         ref = string.split('-');
         for (row = k = 0, len = ref.length; k < len; row = ++k) {
           rowString = ref[row];
@@ -645,36 +663,27 @@
       }
 
       serializeStateV3() {
-        var word;
+        var cell;
         return ((function() {
           var k, len, ref, results;
-          ref = this.words;
+          ref = this.cells;
           results = [];
           for (k = 0, len = ref.length; k < len; k++) {
-            word = ref[k];
-            if (word.clue != null) {
-              results.push(word.toString('_'));
-            }
+            cell = ref[k];
+            results.push(cell.textContent);
           }
           return results;
         }).call(this)).join('-');
       }
 
       unserializeStateV3(string) {
-        var cell, cellIndex, cellStrings, k, l, len, len1, ref, ref1, word, wordIndex, wordStrings;
-        wordStrings = string.split('-');
-        ref = this.words.filter((word) => {
-          return word.clue != null;
-        });
+        var cell, cellIndex, cellStrings, k, len, ref;
+        cellStrings = string.split('-');
+        ref = this.cells;
         // filter instead of when keyword makes indices line up
-        for (wordIndex = k = 0, len = ref.length; k < len; wordIndex = ++k) {
-          word = ref[wordIndex];
-          cellStrings = wordStrings[wordIndex].split('');
-          ref1 = word.cells;
-          for (cellIndex = l = 0, len1 = ref1.length; l < len1; cellIndex = ++l) {
-            cell = ref1[cellIndex];
-            cell.textContent = cellStrings[cellIndex];
-          }
+        for (cellIndex = k = 0, len = ref.length; k < len; cellIndex = ++k) {
+          cell = ref[cellIndex];
+          cell.textContent = cellStrings[cellIndex];
         }
       }
 
@@ -720,6 +729,7 @@
 
       check() {
         var solutionHash;
+        console.warn('TODO: make checking work again');
         solutionHash = this.grid.getAttribute('data-solution-hash-v1');
         return solutionHash === this.currentHash();
       }
@@ -730,6 +740,7 @@
 
       gridHTML() {
         var cell, html, k, len, ref, temp, word;
+        console.warn('TODO: find better solution for grid creation');
         word = this.currentWord;
         this.currentWord = null;
         this.grid.setAttribute('data-solution-hash-v1', this.currentHash());
@@ -966,7 +977,9 @@
     },
     numberOfBlacks: {
       get: function() {
-        return this.grid.querySelectorAll('td:empty').length;
+        return this.cells.filter((cell) => {
+          return cell.textContent === '';
+        }).length;
       }
     },
     numberOfClues: {
@@ -978,7 +991,9 @@
     },
     numberOfWhites: {
       get: function() {
-        return this.grid.querySelectorAll('td:not(:empty)').length;
+        return this.cells.filter((cell) => {
+          return cell.textContent !== '';
+        }).length;
       }
     },
     positionInWord: {
@@ -1187,6 +1202,19 @@
     }
     words.sort(compareWordsDomOrder);
     return words;
+  };
+
+  // TODO: make this a static method of Kreuzwort?
+  window.kreuzwortFromGrid = (grid, saveId, hiddenContainer) => {
+    var cellMatrix, cells, words;
+    cells = grid.querySelectorAll('td');
+    cellMatrix = tableCellMatrix(grid);
+    words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => {
+      return cell.hasAttribute("data-clue-horizontal");
+    }).concat(cellMatrixToWordList(cellMatrix, Kreuzwort.vertical, (cell) => {
+      return cell.hasAttribute("data-clue-vertical");
+    }));
+    return new Kreuzwort(cells, words, saveId, void 0, hiddenContainer);
   };
 
   window.Kreuzwort = Kreuzwort;

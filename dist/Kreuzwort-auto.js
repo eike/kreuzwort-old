@@ -54,7 +54,7 @@
     var checkButton, clearButton, controlsDiv, createButton, currentClueDiv, direction, directions, elementAfterGrid, grid, head, i, kreuzwort, len, localStrings, printEmptyButton, printFullButton;
     grid = container.querySelector('table');
     elementAfterGrid = grid.nextElementSibling;
-    kreuzwort = new Kreuzwort(grid, container.id, Kreuzwort.featuresFull, container);
+    kreuzwort = kreuzwortFromGrid(grid, container.id, container);
     // TODO: Better way to choose this automatically (HTML lang attribute?)
     localStrings = german;
     currentClueDiv = document.createElement('p');
