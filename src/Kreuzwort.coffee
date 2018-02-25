@@ -54,6 +54,10 @@ Object.defineProperties Word.prototype,
         set: (clue) ->
             clue = '' unless clue?
             @startingCell.setAttribute "data-clue-#{@direction}", clue
+    enumeration:
+        get: ->
+            enumeration = @startingCell.getAttribute "data-enumeration-#{@direction}"
+            enumeration or @length.toString()
     explanation: 
         get: ->
             explanation = @startingCell.getAttribute "data-explanation-#{@direction}"
@@ -373,8 +377,11 @@ class Kreuzwort
         return
     
     serializeStateV1: ->
+        # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        # but saved state from older version should not get lost.
+        grid = @cells[0].parentElement.parentElement
         console.warn('serializeStateV1 is deprecated, use the version of serializeState with the highest number')
-        (for row in @grid.rows
+        (for row in grid.rows
             (cell.textContent for cell in row.cells).join ','
         ).join ';'
 
@@ -458,21 +465,24 @@ class Kreuzwort
         return solutionHash == @currentHash()
     
     currentHash: ->
-        hash @saveV1()
+        hash @serializeStateV1()
     
     gridHTML: () ->
         console.warn('TODO: find better solution for grid creation')
         word = @currentWord
         @currentWord = null
-        @grid.setAttribute('data-solution-hash-v1', @currentHash())
+        # This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        # but saved state from older version should not get lost.
+        grid = @cells[0].parentElement.parentElement
+        grid.setAttribute('data-solution-hash-v1', @currentHash())
         @unnumberCells()
-        for cell in @grid.querySelectorAll("td[class='']")
+        for cell in grid.querySelectorAll("td[class='']")
             cell.removeAttribute('class')
         @populateClues()
-        temp = @saveV1()
+        temp = @serializeStateV3()
         @clear false
-        html = @grid.outerHTML
-        @loadV1(temp)
+        html = grid.outerHTML
+        @unserializeStateV3(temp)
         @numberWords()
         @currentWord = word
         return html
@@ -511,7 +521,7 @@ class Kreuzwort
                 word.addCallback 'unselected', =>
                     li.classList.remove 'current-clue'
             li.innerHTML = word.clue
-            li.setAttribute('data-enumeration', word.length)
+            li.setAttribute('data-enumeration', word.enumeration)
             li.setAttribute('data-partial-solution', word.toString()) unless word.isEmpty
             
             if word.isComplete
@@ -577,7 +587,7 @@ Object.defineProperties Kreuzwort.prototype,
                 @_currentWord = newWord
                 @_currentWord?.addClass() if @_currentWord?.clue?
                 @_currentWord?.trigger 'selected'
-                @positionInWord = @_currentWord?.firstEmptyPosition
+                @positionInWord = @_currentWord.firstEmptyPosition if @_currentWord?
     numberOfBlacks:
         get: -> @cells.filter((cell) => cell.textContent == '').length
     numberOfClues:
@@ -627,14 +637,6 @@ hash = (string) =>
         h = ((h << 5) - h) + c
         h = h & h # Convert to 32bit integer
     return h.toString()
-
-toClipboard = (string) =>
-    textarea = document.createElement 'textarea'
-    textarea.value = string
-    document.body.appendChild textarea
-    textarea.select()
-    document.execCommand('copy')
-    document.body.removeChild textarea
 
 createSecretInput = (outline) ->
     secretInput = document.createElement('input')

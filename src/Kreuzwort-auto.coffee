@@ -43,6 +43,14 @@ german =
     print: 'Drucken'
     printEmpty: 'Leer drucken'
 
+toClipboard = (string) =>
+    textarea = document.createElement 'textarea'
+    textarea.value = string
+    document.body.appendChild textarea
+    textarea.select()
+    document.execCommand('copy')
+    document.body.removeChild textarea
+
 window.kreuzwortAutoSetup = (container) =>
     grid = container.querySelector('table')
     elementAfterGrid = grid.nextElementSibling
@@ -59,7 +67,7 @@ window.kreuzwortAutoSetup = (container) =>
                 """<span class="current-word-position">
                         #{localStrings[data.word.direction]}, #{data.word.number}
                     </span>
-                    #{data.word.clue} (#{data.word.length})
+                    #{data.word.clue} (#{data.word.enumeration})
                     """
             else
                 "<i>#{localStrings.noClue}</i>"

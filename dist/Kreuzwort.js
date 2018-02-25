@@ -15,7 +15,7 @@
   // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   // See the License for the specific language governing permissions and
   // limitations under the License.
-  var Kreuzwort, Word, compareWordsClueOrder, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
+  var Kreuzwort, Word, compareWordsClueOrder, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, wordStartsToRegExp;
 
   Word = class Word {
     constructor(cells1, direction1) {
@@ -98,6 +98,13 @@
           clue = '';
         }
         return this.startingCell.setAttribute(`data-clue-${this.direction}`, clue);
+      }
+    },
+    enumeration: {
+      get: function() {
+        var enumeration;
+        enumeration = this.startingCell.getAttribute(`data-enumeration-${this.direction}`);
+        return enumeration || this.length.toString();
       }
     },
     explanation: {
@@ -624,11 +631,14 @@
       }
 
       serializeStateV1() {
-        var cell, row;
+        var cell, grid, row;
+        // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        // but saved state from older version should not get lost.
+        grid = this.cells[0].parentElement.parentElement;
         console.warn('serializeStateV1 is deprecated, use the version of serializeState with the highest number');
         return ((function() {
           var k, len, ref, results;
-          ref = this.grid.rows;
+          ref = grid.rows;
           results = [];
           for (k = 0, len = ref.length; k < len; k++) {
             row = ref[k];
@@ -644,7 +654,7 @@
             })()).join(','));
           }
           return results;
-        }).call(this)).join(';');
+        })()).join(';');
       }
 
       unserializeStateV1(string) {
@@ -814,26 +824,29 @@
       }
 
       currentHash() {
-        return hash(this.saveV1());
+        return hash(this.serializeStateV1());
       }
 
       gridHTML() {
-        var cell, html, k, len, ref, temp, word;
+        var cell, grid, html, k, len, ref, temp, word;
         console.warn('TODO: find better solution for grid creation');
         word = this.currentWord;
         this.currentWord = null;
-        this.grid.setAttribute('data-solution-hash-v1', this.currentHash());
+        // This is slightly hacky because the Kreuzwort object does not keep a reference to its grid anymore,
+        // but saved state from older version should not get lost.
+        grid = this.cells[0].parentElement.parentElement;
+        grid.setAttribute('data-solution-hash-v1', this.currentHash());
         this.unnumberCells();
-        ref = this.grid.querySelectorAll("td[class='']");
+        ref = grid.querySelectorAll("td[class='']");
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
           cell.removeAttribute('class');
         }
         this.populateClues();
-        temp = this.saveV1();
+        temp = this.serializeStateV3();
         this.clear(false);
-        html = this.grid.outerHTML;
-        this.loadV1(temp);
+        html = grid.outerHTML;
+        this.unserializeStateV3(temp);
         this.numberWords();
         this.currentWord = word;
         return html;
@@ -931,7 +944,7 @@
           li.value = word.number;
           fn(li);
           li.innerHTML = word.clue;
-          li.setAttribute('data-enumeration', word.length);
+          li.setAttribute('data-enumeration', word.enumeration);
           if (!word.isEmpty) {
             li.setAttribute('data-partial-solution', word.toString());
           }
@@ -1035,7 +1048,7 @@
         return this._currentWord;
       },
       set: function(newWord) {
-        var ref, ref1, ref2, ref3, ref4, ref5;
+        var ref, ref1, ref2, ref3, ref4;
         if (newWord !== this._currentWord) {
           if ((ref = this._currentWord) != null) {
             ref.removeClass();
@@ -1052,7 +1065,9 @@
           if ((ref4 = this._currentWord) != null) {
             ref4.trigger('selected');
           }
-          return this.positionInWord = (ref5 = this._currentWord) != null ? ref5.firstEmptyPosition : void 0;
+          if (this._currentWord != null) {
+            return this.positionInWord = this._currentWord.firstEmptyPosition;
+          }
         }
       }
     },
@@ -1132,16 +1147,6 @@
       h = h & h; // Convert to 32bit integer
     }
     return h.toString();
-  };
-
-  toClipboard = (string) => {
-    var textarea;
-    textarea = document.createElement('textarea');
-    textarea.value = string;
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand('copy');
-    return document.body.removeChild(textarea);
   };
 
   createSecretInput = function(outline) {
