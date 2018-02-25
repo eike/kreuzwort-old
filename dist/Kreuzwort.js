@@ -15,7 +15,7 @@
   // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   // See the License for the specific language governing permissions and
   // limitations under the License.
-  var Kreuzwort, Word, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
+  var Kreuzwort, Word, compareWordsClueOrder, compareWordsDomOrder, constFalse, createSecretInput, hash, standardBlockTest, standardInputCallback, standardLetters, toClipboard, wordStartsToRegExp;
 
   Word = class Word {
     constructor(cells1, direction1) {
@@ -189,25 +189,27 @@
         this.callbacks = {
           changed: [this.save.bind(this)],
           input: [standardInputCallback],
-          selectionChanged: []
+          selectionChanged: [],
+          structureChanged: []
         };
-        //@previousInput = createSecretInput()
-        //@previousInput.onfocus = () =>
-        //    @retrogressCursor()
-        //    @secretInput.focus()
-        //document.body.appendChild @previousInput
-
-        //@nextInput = createSecretInput()
-        //@nextInput.onfocus = () =>
-        //    @advanceCursor()
-        //    @secretInput.focus()
-        //document.body.appendChild @nextInput
+        this.previousInput = createSecretInput();
+        this.previousInput.onfocus = () => {
+          this.selectNextWord(-1);
+          return this.secretInput.focus();
+        };
+        hiddenContainer.appendChild(this.previousInput);
         this.secretInput = createSecretInput();
         this.secretInput.onkeydown = (e) => {
           return this.processInput(e);
         };
         // TODO: When @secretInput looses focus, maybe grey-out current word
         hiddenContainer.appendChild(this.secretInput);
+        this.nextInput = createSecretInput();
+        this.nextInput.onfocus = () => {
+          this.selectNextWord(1, true);
+          return this.secretInput.focus();
+        };
+        hiddenContainer.appendChild(this.nextInput);
         this.repositionSecretInputs();
         this.cursorSpan = document.createElement('span');
         this.cursorSpan.className = 'cursor';
@@ -307,18 +309,7 @@
       numberWords(words = this.words.filter((word) => {
           return word.clue != null;
         })) {
-        var cell, cellNumberGenerator, explicitNumber, k, l, len, len1, ref, ref1, results, word;
-        cellNumberGenerator = (function*(exclude) {
-          var num, number;
-          num = 0;
-          while (true) {
-            num++;
-            number = num.toString();
-            if (!(exclude.indexOf(number) >= 0)) {
-              yield number;
-            }
-          }
-        })(this.explicitNumbers());
+        var cell, exclude, explicitNumber, k, l, len, len1, num, ref, ref1, results, word;
         ref = this.cells;
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
@@ -326,12 +317,18 @@
             cell.setAttribute('data-cell-number', explicitNumber);
           }
         }
+        exclude = this.explicitNumbers();
+        num = 0;
         ref1 = words.sort(compareWordsDomOrder);
         results = [];
         for (l = 0, len1 = ref1.length; l < len1; l++) {
           word = ref1[l];
           if (word.number == null) {
-            results.push(word.number = cellNumberGenerator.next().value);
+            num++;
+            while (exclude.indexOf(num.toString()) >= 0) {
+              num++;
+            }
+            results.push(word.number = num.toString());
           } else {
             results.push(void 0);
           }
@@ -349,7 +346,7 @@
         ref = this.cells;
         for (k = 0, len = ref.length; k < len; k++) {
           cell = ref[k];
-          if (cell.getAttribute('data-cell-number') === number) {
+          if (cell.getAttribute('data-cell-number') === number.toString()) {
             return cell;
           }
         }
@@ -375,6 +372,7 @@
         if (cell === this.currentCell) {
           newWord = words[(words.indexOf(this.currentWord) + 1) % words.length];
         } else {
+          // TODO: Preserve current direction, if eligable
           wordsWithClues = words.filter((word) => {
             return word.clue != null;
           });
@@ -419,41 +417,108 @@
         }
       }
 
+      addWord(word) {
+        var cell, k, len, ref;
+        this.words.push(word);
+        ref = word.cells;
+        for (k = 0, len = ref.length; k < len; k++) {
+          cell = ref[k];
+          this.wordsAtCell(cell).push(word);
+        }
+      }
+
+      removeWord(word) {
+        var cell, k, len, ref, wordsAtCell;
+        this.words.splice(this.words.indexOf(word), 1);
+        ref = word.cells;
+        for (k = 0, len = ref.length; k < len; k++) {
+          cell = ref[k];
+          wordsAtCell = this.wordsAtCell(cell);
+          wordsAtCell.splice(wordsAtCell.indexOf(word), 1);
+        }
+      }
+
       setBar() {
-        var direction, index, nextPosition, nextWord, postWord, preWord;
+        var direction, nextPosition, nextWord, postWord, preWord;
         direction = this.currentWord.direction;
-        index = this.words.indexOf(this.currentWord);
-        this.words.splice(index, 1);
+        this.removeWord(this.currentWord);
         preWord = new Word(this.currentWord.cells.slice(0, this.positionInWord), direction);
         postWord = new Word(this.currentWord.cells.slice(this.positionInWord), direction);
         if (preWord.length > 0) {
-          this.words.push(preWord);
+          this.addWord(preWord);
           nextWord = preWord;
           nextPosition = preWord.length;
         }
         if (postWord.length > 0) {
           postWord.clue = ".";
-          this.words.push(postWord);
+          this.addWord(postWord);
           nextWord = postWord;
           nextPosition = 0;
         }
-        this.words.sort(compareWordsDomOrder); // TODO: Change sort to clue-order
+        this.words.sort(compareWordsClueOrder);
         this.renumber();
+        this.trigger('structureChanged');
         // Do this after renumbering so the right number is shown below the crossword immediately
         this.currentWord = nextWord;
         this.positionInWord = nextPosition;
       }
 
+      setBlock() {
+        var k, len, nextPosition, nextWord, oldClue, positionInWord, postWord, preWord, ref, word;
+        ref = (this.wordsAtCell(this.currentCell)).slice(0);
+        // Make a shallow copy because we change this array below
+        for (k = 0, len = ref.length; k < len; k++) {
+          word = ref[k];
+          this.removeWord(word);
+          positionInWord = word.cells.indexOf(this.currentCell);
+          preWord = new Word(word.cells.slice(0, positionInWord), word.direction);
+          postWord = new Word(word.cells.slice(positionInWord + 1), word.direction);
+          oldClue = word.clue;
+          word.clue = '';
+          if (preWord.length > 0) {
+            if (preWord.length > 1) {
+              preWord.clue = oldClue;
+            }
+            this.addWord(preWord);
+            if (word === this.currentWord) {
+              nextWord = preWord;
+              nextPosition = preWord.length;
+            }
+          }
+          if (postWord.length > 0) {
+            if (postWord.length > 1) {
+              postWord.clue = '.';
+            }
+            this.addWord(postWord);
+            if (word === this.currentWord) {
+              nextWord = postWord;
+              nextPosition = 0;
+            }
+          }
+        }
+        this.currentCell.textContent = '';
+        this.words.sort(compareWordsClueOrder);
+        this.renumber();
+        this.trigger('structureChanged');
+        this.currentWord = nextWord;
+        if (nextWord != null) {
+          this.positionInWord = nextPosition;
+        }
+      }
+
       processInput(e) {
-        var callbackResult, cell, entry, inputProcessed, k, l, len, len1, preserveNumber, ref, ref1;
+        var callbackResult, cell, entry, inputProcessed, k, key, l, len, len1, preserveNumber, ref, ref1;
         if (e.metaKey || e.ctrlKey) {
           return;
         }
         e.preventDefault();
         preserveNumber = false;
         inputProcessed = false;
+        
+        // TODO: This seems to be necessary for older browers!?
+        key = e.key || String.fromCharCode(e.keyCode);
         ref = this.trigger('input', {
-          key: e.key
+          key: key
         }).reverse();
         for (k = 0, len = ref.length; k < len; k++) {
           callbackResult = ref[k];
@@ -516,8 +581,9 @@
                 }
                 break;
               case 'Delete':
-                if (this.features.writeNewCells) {
-                  this.write('');
+              case '.':
+                if (this.features.setBlocks) {
+                  this.setBlock();
                 }
             }
           }
@@ -714,7 +780,7 @@
         params = new URL(location).searchParams;
         for (k = 0, len = loaders.length; k < len; k++) {
           ({key, fun} = loaders[k]);
-          if (params.has(key)) {
+          if (params != null ? params.has(key) : void 0) {
             fun.bind(this)(params.get(key));
             return;
           }
@@ -882,13 +948,13 @@
     };
 
     Kreuzwort.featuresFull = {
-      writeNewCells: false,
-      setBars: false
+      setBars: false,
+      setBlocks: false
     };
 
     Kreuzwort.featuresConstruction = {
-      writeNewCells: true,
-      setBars: true
+      setBars: true,
+      setBlocks: true
     };
 
     Kreuzwort.horizontal = {
@@ -917,6 +983,7 @@
       },
       before: 'left',
       after: 'right',
+      sortIndex: 0,
       other: null
     };
 
@@ -946,6 +1013,7 @@
       },
       before: 'top',
       after: 'bottom',
+      sortIndex: 1,
       other: Kreuzwort.horizontal
     };
 
@@ -1101,6 +1169,16 @@
     }
   };
 
+  compareWordsClueOrder = function(wordA, wordB) {
+    var dirDiff;
+    dirDiff = wordA.direction.sortIndex - wordB.direction.sortIndex;
+    if (dirDiff !== 0) {
+      return dirDiff;
+    } else {
+      return compareWordsDomOrder(wordA, wordB);
+    }
+  };
+
   standardLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   standardInputCallback = function(e) {
@@ -1220,7 +1298,7 @@
   // TODO: make this a static method of Kreuzwort?
   window.kreuzwortFromGrid = (grid, saveId, hiddenContainer) => {
     var cellMatrix, cells, words;
-    cells = grid.querySelectorAll('td');
+    cells = Array.from(grid.querySelectorAll('td'));
     cellMatrix = tableCellMatrix(grid);
     words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => {
       return cell.hasAttribute("data-clue-horizontal");

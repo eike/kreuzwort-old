@@ -92,23 +92,25 @@ class Kreuzwort
             changed: [ @save.bind(this) ]
             input: [ standardInputCallback ]
             selectionChanged: [ ]
+            structureChanged: [ ]
 
-        #@previousInput = createSecretInput()
-        #@previousInput.onfocus = () =>
-        #    @retrogressCursor()
-        #    @secretInput.focus()
-        #document.body.appendChild @previousInput
-        
-        #@nextInput = createSecretInput()
-        #@nextInput.onfocus = () =>
-        #    @advanceCursor()
-        #    @secretInput.focus()
-        #document.body.appendChild @nextInput
+        @previousInput = createSecretInput()
+        @previousInput.onfocus = () =>
+            @selectNextWord(-1)
+            @secretInput.focus()
+        hiddenContainer.appendChild @previousInput
         
         @secretInput = createSecretInput()
         @secretInput.onkeydown = (e) => @processInput e
         # TODO: When @secretInput looses focus, maybe grey-out current word
         hiddenContainer.appendChild @secretInput
+
+        @nextInput = createSecretInput()
+        @nextInput.onfocus = () =>
+            @selectNextWord(1, true)
+            @secretInput.focus()
+        hiddenContainer.appendChild @nextInput
+
         @repositionSecretInputs()
         
         @cursorSpan = document.createElement('span')
@@ -168,21 +170,19 @@ class Kreuzwort
     
     # TODO: A more elegant way of setting the standard for numbering?
     numberWords: (words = @words.filter((word) => word.clue?)) ->
-        cellNumberGenerator = do (exclude = @explicitNumbers()) ->
-            num = 0
-            loop
-                num++
-                number = num.toString()
-                yield number unless (exclude.indexOf(number) >= 0)
-            return
-        
         for cell in @cells
             if (explicitNumber = cell.getAttribute('data-explicit-number'))?
                 cell.setAttribute('data-cell-number', explicitNumber)
+
+        exclude = @explicitNumbers()
+        num = 0
         
         for word in words.sort compareWordsDomOrder
             unless word.number?
-                word.number = cellNumberGenerator.next().value
+                num++
+                while exclude.indexOf(num.toString()) >= 0
+                    num++
+                word.number = num.toString()
     
     renumber: ->
         @unnumberCells()
@@ -190,7 +190,7 @@ class Kreuzwort
     
     cellWithNumber: (number) ->
         for cell in @cells
-            if cell.getAttribute('data-cell-number') == number
+            if cell.getAttribute('data-cell-number') == number.toString()
                 return cell
         return null
     
@@ -209,6 +209,7 @@ class Kreuzwort
         if cell == @currentCell
             newWord = words[(words.indexOf(@currentWord) + 1) % words.length]
         else
+            # TODO: Preserve current direction, if eligable
             wordsWithClues = words.filter((word) => word.clue?)
             wordsStartingHere = wordsWithClues.filter((word) => word.startingCell == cell)
             newWord = (wordsStartingHere.concat wordsWithClues, words)[0]
@@ -236,28 +237,70 @@ class Kreuzwort
         else
             return false
     
+    addWord: (word) ->
+        @words.push word
+        for cell in word.cells
+            @wordsAtCell(cell).push(word)
+        return
+    
+    removeWord: (word) ->
+        @words.splice(@words.indexOf(word), 1)
+        for cell in word.cells
+            wordsAtCell = @wordsAtCell(cell)
+            wordsAtCell.splice(wordsAtCell.indexOf(word), 1)
+        return
+    
     setBar: ->
         direction = @currentWord.direction
-        index = @words.indexOf(@currentWord)
-        @words.splice(index, 1)
+        @removeWord @currentWord
         preWord = new Word @currentWord.cells.slice(0, @positionInWord), direction
         postWord = new Word @currentWord.cells.slice(@positionInWord), direction
         if preWord.length > 0
-            @words.push preWord
+            @addWord preWord
             nextWord = preWord
             nextPosition = preWord.length
         if postWord.length > 0
             postWord.clue = "."
-            @words.push postWord
+            @addWord postWord
             nextWord = postWord
             nextPosition = 0
-        @words.sort compareWordsDomOrder # TODO: Change sort to clue-order
+        @words.sort compareWordsClueOrder
         @renumber()
+        @trigger 'structureChanged'
         # Do this after renumbering so the right number is shown below the crossword immediately
         @currentWord = nextWord
         @positionInWord = nextPosition
         return
     
+    setBlock: ->
+        for word in (@wordsAtCell @currentCell).slice(0) # Make a shallow copy because we change this array below
+            @removeWord word
+            positionInWord = word.cells.indexOf @currentCell
+            preWord = new Word word.cells.slice(0, positionInWord), word.direction
+            postWord = new Word word.cells.slice(positionInWord + 1), word.direction
+            oldClue = word.clue
+            word.clue = ''
+            if preWord.length > 0
+                preWord.clue = oldClue if preWord.length > 1
+                @addWord preWord
+                if word == @currentWord
+                    nextWord = preWord
+                    nextPosition = preWord.length
+            if postWord.length > 0
+                postWord.clue = '.' if postWord.length > 1
+                @addWord postWord
+                if word == @currentWord
+                    nextWord = postWord
+                    nextPosition = 0
+        @currentCell.textContent = ''
+        @words.sort compareWordsClueOrder
+        @renumber()
+        @trigger 'structureChanged'
+        @currentWord = nextWord
+        if nextWord?
+            @positionInWord = nextPosition
+        return
+        
     processInput: (e) ->
         if e.metaKey or e.ctrlKey
             return
@@ -266,7 +309,10 @@ class Kreuzwort
         preserveNumber = false
         inputProcessed = false
         
-        for callbackResult in @trigger('input', { key: e.key }).reverse()
+        # TODO: This seems to be necessary for older browers!?
+        key = e.key || String.fromCharCode(e.keyCode)
+        
+        for callbackResult in @trigger('input', { key: key }).reverse()
             if callbackResult?
                 inputProcessed = true
                 @write entry for entry in callbackResult
@@ -305,9 +351,8 @@ class Kreuzwort
                         @positionInWord -= 1
                 when '|'
                     @setBar() if @features.setBars
-                when 'Delete'
-                    if @features.writeNewCells
-                        @write ''
+                when 'Delete', '.'
+                    @setBlock() if @features.setBlocks
 
         @number = 0 unless preserveNumber
         
@@ -390,7 +435,7 @@ class Kreuzwort
             ]
         params = new URL(location).searchParams
         for { key, fun } in loaders
-            if params.has key
+            if params?.has key
                 fun.bind(this)(params.get(key))
                 return
         try
@@ -489,12 +534,12 @@ class Kreuzwort
         return ol
     
     @featuresFull:
-        writeNewCells: false
         setBars: false
+        setBlocks: false
     
     @featuresConstruction:
-        writeNewCells: true
         setBars: true
+        setBlocks: true
     
     @horizontal:
         toString: () => "horizontal"
@@ -504,6 +549,7 @@ class Kreuzwort
             if cursor? then { row: cursor.row, col: cursor.col - 1 } else null
         before: 'left'
         after: 'right'
+        sortIndex: 0
         other: null
 
     @vertical:
@@ -514,6 +560,7 @@ class Kreuzwort
             if cursor? then { row: cursor.row - 1, col: cursor.col } else null
         before: 'top'
         after: 'bottom'
+        sortIndex: 1
         other: Kreuzwort.horizontal
 
 Kreuzwort.horizontal.other = Kreuzwort.vertical
@@ -609,6 +656,13 @@ compareWordsDomOrder = (wordA, wordB) ->
     else
         return cellA.cellIndex - cellB.cellIndex
 
+compareWordsClueOrder = (wordA, wordB) ->
+    dirDiff = wordA.direction.sortIndex - wordB.direction.sortIndex
+    if dirDiff != 0
+        return dirDiff
+    else
+        return compareWordsDomOrder(wordA, wordB)
+
 standardLetters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".split ""
 standardInputCallback = (e) ->
     if (standardLetters.indexOf e.key) >= 0
@@ -685,7 +739,7 @@ window.cellMatrixToWordList = (matrix, direction, hasBarBefore = constFalse, isB
 
 # TODO: make this a static method of Kreuzwort?
 window.kreuzwortFromGrid = (grid, saveId, hiddenContainer) =>
-    cells = grid.querySelectorAll('td')
+    cells = Array.from(grid.querySelectorAll('td'))
     cellMatrix = tableCellMatrix grid
     words = cellMatrixToWordList(cellMatrix, Kreuzwort.horizontal, (cell) => 
             cell.hasAttribute("data-clue-horizontal")

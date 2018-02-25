@@ -80,16 +80,16 @@ window.kreuzwortAutoSetup = (container) =>
             alert localStrings.solutionCorrect
         else
             alert localStrings.solutionIncorrect
-    controlsDiv.append checkButton
-    controlsDiv.append ' '
+    controlsDiv.appendChild checkButton
+    controlsDiv.appendChild(document.createTextNode ' ')
     
     clearButton = document.createElement 'button'
     clearButton.textContent = localStrings.reset
     clearButton.addEventListener 'click', =>
         if confirm(localStrings.resetConfirmation)
             kreuzwort.clear()
-    controlsDiv.append clearButton
-    controlsDiv.append ' '
+    controlsDiv.appendChild clearButton
+    controlsDiv.appendChild(document.createTextNode ' ')
 
     unless container.classList.contains 'compact'
         printEmptyButton = document.createElement 'button'
@@ -99,21 +99,21 @@ window.kreuzwortAutoSetup = (container) =>
             kreuzwort.clear()
             window.print()
             Promise.resolve().then => (kreuzwort.loadV1(temp); kreuzwort.save())
-        controlsDiv.append printEmptyButton
-        controlsDiv.append ' '
+        controlsDiv.appendChild printEmptyButton
+        controlsDiv.appendChild(document.createTextNode ' ')
         
         printFullButton = document.createElement 'button'
         printFullButton.textContent = localStrings.print
         printFullButton.addEventListener 'click', => window.print()
-        controlsDiv.append printFullButton
-        controlsDiv.append ' '
+        controlsDiv.appendChild printFullButton
+        controlsDiv.appendChild(document.createTextNode ' ')
     
     if container.classList.contains 'construction'
         createButton = document.createElement 'button'
         createButton.textContent = localStrings.copyHTML
         createButton.addEventListener 'click', => toClipboard(kreuzwort.gridHTML())
-        controlsDiv.append createButton
-        controlsDiv.append ' '
+        controlsDiv.appendChild createButton
+        controlsDiv.appendChild(document.createTextNode ' ')
         
         kreuzwort.features = Kreuzwort.featuresConstruction
     
@@ -133,7 +133,7 @@ window.kreuzwortAutoSetup = (container) =>
 window.kreuzwortAutoInstances = []
 
 window.addEventListener 'load', () =>
-    document.querySelectorAll('.kreuzwort').forEach (container) =>
+    for container in document.querySelectorAll('.kreuzwort')
         kreuzwort = kreuzwortAutoSetup(container)
         kreuzwortAutoInstances.push kreuzwort
     if window.kreuzwortAutoInstances.length == 1

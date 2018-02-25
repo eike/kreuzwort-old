@@ -84,8 +84,8 @@
         return alert(localStrings.solutionIncorrect);
       }
     });
-    controlsDiv.append(checkButton);
-    controlsDiv.append(' ');
+    controlsDiv.appendChild(checkButton);
+    controlsDiv.appendChild(document.createTextNode(' '));
     clearButton = document.createElement('button');
     clearButton.textContent = localStrings.reset;
     clearButton.addEventListener('click', () => {
@@ -93,8 +93,8 @@
         return kreuzwort.clear();
       }
     });
-    controlsDiv.append(clearButton);
-    controlsDiv.append(' ');
+    controlsDiv.appendChild(clearButton);
+    controlsDiv.appendChild(document.createTextNode(' '));
     if (!container.classList.contains('compact')) {
       printEmptyButton = document.createElement('button');
       printEmptyButton.textContent = localStrings.printEmpty;
@@ -108,15 +108,15 @@
           return kreuzwort.save();
         });
       });
-      controlsDiv.append(printEmptyButton);
-      controlsDiv.append(' ');
+      controlsDiv.appendChild(printEmptyButton);
+      controlsDiv.appendChild(document.createTextNode(' '));
       printFullButton = document.createElement('button');
       printFullButton.textContent = localStrings.print;
       printFullButton.addEventListener('click', () => {
         return window.print();
       });
-      controlsDiv.append(printFullButton);
-      controlsDiv.append(' ');
+      controlsDiv.appendChild(printFullButton);
+      controlsDiv.appendChild(document.createTextNode(' '));
     }
     if (container.classList.contains('construction')) {
       createButton = document.createElement('button');
@@ -124,8 +124,8 @@
       createButton.addEventListener('click', () => {
         return toClipboard(kreuzwort.gridHTML());
       });
-      controlsDiv.append(createButton);
-      controlsDiv.append(' ');
+      controlsDiv.appendChild(createButton);
+      controlsDiv.appendChild(document.createTextNode(' '));
       kreuzwort.features = Kreuzwort.featuresConstruction;
     }
     if (controlsDiv.hasChildNodes()) {
@@ -147,11 +147,13 @@
   window.kreuzwortAutoInstances = [];
 
   window.addEventListener('load', () => {
-    document.querySelectorAll('.kreuzwort').forEach((container) => {
-      var kreuzwort;
+    var container, i, kreuzwort, len, ref;
+    ref = document.querySelectorAll('.kreuzwort');
+    for (i = 0, len = ref.length; i < len; i++) {
+      container = ref[i];
       kreuzwort = kreuzwortAutoSetup(container);
-      return kreuzwortAutoInstances.push(kreuzwort);
-    });
+      kreuzwortAutoInstances.push(kreuzwort);
+    }
     if (window.kreuzwortAutoInstances.length === 1) {
       return window.kreuzwort = window.kreuzwortAutoInstances[0];
     }
