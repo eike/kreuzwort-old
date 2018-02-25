@@ -26,7 +26,13 @@ The basic setup is as follows. See the examples folder for ideas.
 
 1.  Embed the script in your page, e.g.
 
-        <script type="javascript" src="kreuzwort.js"></script>
+        <script type="javascript" src="Kreuzwort.js"></script>
+    
+    and also
+    
+        <script type="javascript" src="Kreuzwort-auto.js"></script>
+    
+    if you want to use the auto-setup in step 3.
 
 2.  Prepare your grid: kreuzwort.coffee expects a `table` representing the grid. In this table:
     - Non-empty cells represent input cells, completely empty cells are blocks.
